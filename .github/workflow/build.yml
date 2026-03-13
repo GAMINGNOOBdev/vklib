@@ -1,0 +1,39 @@
+name: Build project
+
+on:
+    push:
+      branches: [ "main" ]
+    pull_request:
+      branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        build_type: [Release, Debug]
+    env:
+      PARALLEL: -j 2
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: "recursive"
+    - if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install --fix-missing xorg-dev libglfw3-dev libglew-dev libglm-dev libgl1-mesa-dev xorg-dev libxkbcommon-dev libwayland-dev
+    - if: ${{ matrix.os == 'windows-latest' }}
+      name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+    - if: ${{ matrix.platform == 'windows' }}
+      name: Build library
+      shell: pwsh
+      run: |
+        cmake -B"build/${{ matrix.platform }}" -G"Ninja"
+        cmake --build "build/${{ matrix.platform }}" --config ${{ matrix.build_type }} -j 1
+    - if: ${{ matrix.platform != 'windows' }}
+      name: Build library
+      run: |
+        cmake -B"build/${{ matrix.platform }}"
+        cmake --build "build/${{ matrix.platform }}" --config ${{ matrix.build_type }} ${{ env.PARALLEL }}
