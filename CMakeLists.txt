@@ -34,6 +34,8 @@ if (UNIX)
     set(CMAKE_C_FLAGS_RELEASE "-g")
 endif()
 
+add_subdirectory(volk)
+
 add_subdirectory(vklib)
 if(VKLIB_BUILD_SAMPLE)
     add_subdirectory(sample)
