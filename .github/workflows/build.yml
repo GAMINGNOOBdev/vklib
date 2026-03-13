@@ -38,8 +38,3 @@ jobs:
       run: |
         cmake -B"build"
         cmake --build "build" --config ${{ matrix.build_type }} ${{ env.PARALLEL }}
-    - name: Create Artifacts for ${{ matrix.os }}-${{ matrix.build_type }}
-      uses: actions/upload-artifact@v4
-      with:
-        name: vklib-${{ matrix.os }}-${{ matrix.build_type }}
-        path: "build/bin"
