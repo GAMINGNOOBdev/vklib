@@ -19,7 +19,17 @@ add_compile_definitions(__YEAR__=${YEAR})
 add_compile_definitions(__MONTH__=${MONTH})
 add_compile_definitions(__DAY__=${DAY})
 
+set( GLFW_BUILD_EXAMPLES OFF CACHE BOOL "GLFW lib only")
+set( GLFW_BUILD_TESTS OFF CACHE BOOL "GLFW lib only" )
+set( GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW lib only" )
+set( GLFW_INSTALL OFF CACHE BOOL "GLFW lib only" )
+set( GLFW_LIBRARY_TYPE "SHARED" )
+set( BUILD_SHARED_LIBS ON )
+
+add_subdirectory(glfw)
+
 find_package(Vulkan REQUIRED)
+add_subdirectory(volk)
 
 option(VKLIB_BUILD_SAMPLE "Build sample app" ON)
 
@@ -33,8 +43,6 @@ if (UNIX)
     set(CMAKE_C_FLAGS_DEBUG "-g -ggdb")
     set(CMAKE_C_FLAGS_RELEASE "-g")
 endif()
-
-add_subdirectory(volk)
 
 add_subdirectory(vklib)
 if(VKLIB_BUILD_SAMPLE)

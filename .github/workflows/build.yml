@@ -33,17 +33,8 @@ jobs:
     - if: ${{ matrix.os == 'windows-latest' }}
       name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
-    - if: ${{ matrix.os == 'windows-latest' }}
-      name: install glfw via vcpkg
-      run: vcpkg install glfw3:x64-windows
-    - if: ${{ matrix.os == 'windows-latest' }}
-      name: Build library for binbows
-      shell: pwsh
-      run: |
-        cmake -B"build/${{ matrix.platform }}" -G"Ninja"
-        cmake --build "build/${{ matrix.platform }}" --config ${{ matrix.build_type }} -j 1
     - if: ${{ matrix.os == 'ubuntu-latest' }}
-      name: Build library for linux
+      name: Build library
       run: |
         cmake -B"build/${{ matrix.platform }}"
         cmake --build "build/${{ matrix.platform }}" --config ${{ matrix.build_type }} ${{ env.PARALLEL }}
