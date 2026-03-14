@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 project(vklib)
 
+include_directories(
+    inc
+)
+
 set(project_sources
     vklib/set.c
     vklib/vk.c

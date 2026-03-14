@@ -1,5 +1,5 @@
-#include "vk.h"
-#include "vkutil.h"
+#include "vklib/vk.h"
+#include "vklib/vkutil.h"
 
 #include <stdlib.h>
 #include <string.h>

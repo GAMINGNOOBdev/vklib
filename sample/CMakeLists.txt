@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(sample)
 
 include_directories(
-    ../vklib
+    ../vklib/inc
 )
 
 set(project_sources

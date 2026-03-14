@@ -1,7 +1,7 @@
-#include "vk.h"
-#include "vkdev.h"
-#include "vkutil.h"
-#include "vkdisplay.h"
+#include "vklib/vk.h"
+#include "vklib/vkdev.h"
+#include "vklib/vkutil.h"
+#include "vklib/vkdisplay.h"
 
 #include <stdlib.h>
 #include <stdarg.h>
