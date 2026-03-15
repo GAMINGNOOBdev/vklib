@@ -33,8 +33,14 @@ jobs:
     - if: ${{ matrix.os == 'windows-latest' }}
       name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
-    - if: ${{ matrix.os == 'ubuntu-latest' }}
-      name: Build library
+    - name: Build library
       run: |
         cmake -B"build"
         cmake --build "build" --config ${{ matrix.build_type }} ${{ env.PARALLEL }}
+    - if: ${{ matrix.os == 'ubuntu-latest' }}
+      name: Compile shaders
+      run: bash shaders.sh
+    - if: ${{ matrix.os == 'windows-latest' }}
+      name: Compile shaders (windows)
+      shell: pwsh
+      run: .\shaders.ps1

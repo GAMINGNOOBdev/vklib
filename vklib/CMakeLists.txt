@@ -10,6 +10,7 @@ set(project_sources
     vklib/vk.c
     vklib/vkdev.c
     vklib/vkdisplay.c
+    vklib/vkpipeline.c
     vklib/vkutil.c
 )
 
