@@ -23,6 +23,13 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install --fix-missing xorg-dev libglfw3-dev libglew-dev libglm-dev libgl1-mesa-dev xorg-dev libxkbcommon-dev libwayland-dev
+    - name: Prepare Vulkan SDK (windows)
+      if: ${{ matrix.os == 'windows-latest' }}
+      uses: humbletim/setup-vulkan-sdk@v1.2.1
+      with:
+        vulkan-query-version: latest
+        vulkan-components: Vulkan-Headers, Vulkan-Loader
+        vulkan-use-cache: true
     - name: Install Vulkan SDK
       uses: humbletim/install-vulkan-sdk@v1.2
       with:
