@@ -2,6 +2,9 @@
 #include "vklib/vkdev.h"
 #include "vklib/vkutil.h"
 #include "vklib/vkdisplay.h"
+#include "vklib/vkframebuffer.h"
+
+#include <vulkan/vulkan_core.h>
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -27,13 +30,13 @@ extern VKAPI_ATTR VkBool32 VKAPI_CALL vkDebugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData);
 
-vk_data vklib_init(GLFWwindow* window, vklib_log_msg_t logfunc)
+vklibd vklib_init(vklibd_init_data init_data)
 {
-    vk_data vkd = {};
-    if (!window || !logfunc)
+    vklibd vkd = {};
+    if (!init_data.window || !init_data.logfunc)
         return vkd;
 
-    vklib_log_msg = logfunc;
+    vklib_log_msg = init_data.logfunc;
 
     if (volkInitialize() != VK_SUCCESS)
         return vkd;
@@ -42,9 +45,9 @@ vk_data vklib_init(GLFWwindow* window, vklib_log_msg_t logfunc)
 
     VkApplicationInfo app_info = {};
     app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    app_info.pApplicationName = "vulkan abstraction layer";
+    app_info.pApplicationName = init_data.app_name ? init_data.app_name : "vulkan abstraction layer";
     app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    app_info.pEngineName = "none";
+    app_info.pEngineName = init_data.engine_name ? init_data.engine_name : "none";
     app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
     app_info.apiVersion = VK_API_VERSION_1_0;
 
@@ -84,7 +87,7 @@ vk_data vklib_init(GLFWwindow* window, vklib_log_msg_t logfunc)
     }
 
     // presentation setup
-    if (glfwCreateWindowSurface(vkd.instance, window, NULL, &vkd.surface) != VK_SUCCESS)
+    if (glfwCreateWindowSurface(vkd.instance, init_data.window, NULL, &vkd.surface) != VK_SUCCESS)
     {
         LOGERROR("could not create a window surface");
         return vkd;
@@ -96,7 +99,7 @@ vk_data vklib_init(GLFWwindow* window, vklib_log_msg_t logfunc)
         return vkd;
     }
 
-    if (!vklib_display_create_swapchain(window, &vkd))
+    if (!vklib_display_create_swapchain(init_data.window, &vkd))
     {
         LOGERROR("failed to create swap chain");
         return vkd;
@@ -107,15 +110,25 @@ vk_data vklib_init(GLFWwindow* window, vklib_log_msg_t logfunc)
     return vkd;
 }
 
-void vklib_dispose(vk_data* vkd)
+void vklib_init_framebuffers(vklibd* vkd, VkRenderPass render_pass)
 {
-    assume(vkd);
-    assume(vkd->instance);
+    assume(vkd && vkd->instance);
 
-    vklib_display_dispose_swapchain(vkd);
+    vkd->framebuffers = malloc(sizeof(VkFramebuffer) * vkd->swapchain_image_count);
+    vklib_framebuffer_create(vkd, render_pass, vkd->swapchain_image_count, vkd->framebuffers, vkd->swapchain_image_views);
+}
 
-    assume(vklib_dev_dispose(vkd));
-    vklib_util_dispose_debug_messenger(vkd);
+void vklib_destroy(vklibd* vkd)
+{
+    assume(vkd && vkd->instance);
+
+    vklib_framebuffer_destroy(vkd, vkd->swapchain_image_count, vkd->framebuffers);
+    free(vkd->framebuffers);
+
+    vklib_display_destroy_swapchain(vkd);
+
+    assume(vklib_dev_destroy(vkd));
+    vklib_util_destroy_debug_messenger(vkd);
 
     vkDestroySurfaceKHR(vkd->instance, vkd->surface, NULL);
     vkDestroyInstance(vkd->instance, NULL);

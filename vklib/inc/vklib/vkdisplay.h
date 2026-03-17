@@ -16,8 +16,8 @@ typedef struct
 } vklib_display_swapchain_info;
 
 VKLIBAPI vklib_display_swapchain_info vklib_display_query_swapchain_info(VkSurfaceKHR surface, VkPhysicalDevice dev, bool fill);
-VKLIBAPI void vklib_display_swapchain_info_dispose(vklib_display_swapchain_info* info);
-VKLIBAPI bool vklib_display_create_swapchain(GLFWwindow* window, vk_data* vkd);
-VKLIBAPI void vklib_display_dispose_swapchain(vk_data* vkd);
+VKLIBAPI void vklib_display_swapchain_info_destroy(vklib_display_swapchain_info* info);
+VKLIBAPI bool vklib_display_create_swapchain(GLFWwindow* window, vklibd* vkd);
+VKLIBAPI void vklib_display_destroy_swapchain(vklibd* vkd);
 
 #endif

@@ -8,13 +8,15 @@ include_directories(
 set(project_sources
     vklib/set.c
     vklib/vk.c
+    vklib/vkcmd.c
     vklib/vkdev.c
     vklib/vkdisplay.c
+    vklib/vkframebuffer.c
     vklib/vkpipeline.c
     vklib/vkutil.c
 )
 
-add_library(${PROJECT_NAME} SHARED ${project_sources})
+add_library(${PROJECT_NAME} STATIC ${project_sources})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     volk

@@ -20,7 +20,7 @@ typedef struct \
 } TYPE ## _set ; \
 void TYPE ## _set_append(TYPE ## _set* set, TYPE value); \
 void TYPE ## _set_remove(TYPE ## _set* set, TYPE value); \
-void TYPE ## _set_dispose(TYPE ## _set* set)
+void TYPE ## _set_destroy(TYPE ## _set* set)
 
 #define IMPLEMENT_SET(TYPE) \
 size_t TYPE ## _set_contains(TYPE ## _set* set, TYPE value) \
@@ -73,7 +73,7 @@ void TYPE ## _set_remove(TYPE ## _set* set, TYPE value) \
     set->count--; \
 } \
 \
-void TYPE ## _set_dispose(TYPE ## _set* set) \
+void TYPE ## _set_destroy(TYPE ## _set* set) \
 { \
     if (!set || !set->data) \
         return; \

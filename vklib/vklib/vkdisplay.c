@@ -27,7 +27,7 @@ vklib_display_swapchain_info vklib_display_query_swapchain_info(VkSurfaceKHR sur
     return info;
 }
 
-void vklib_display_swapchain_info_dispose(vklib_display_swapchain_info* info)
+void vklib_display_swapchain_info_destroy(vklib_display_swapchain_info* info)
 {
     assume(info);
 
@@ -38,7 +38,7 @@ void vklib_display_swapchain_info_dispose(vklib_display_swapchain_info* info)
     free(info->present_modes);
 }
 
-bool vklib_display_create_swapchain(GLFWwindow* window, vk_data* vkd)
+bool vklib_display_create_swapchain(GLFWwindow* window, vklibd* vkd)
 {
     assume(vkd, false);
     assume(vkd->physical_device != VK_NULL_HANDLE, false);
@@ -81,7 +81,7 @@ bool vklib_display_create_swapchain(GLFWwindow* window, vk_data* vkd)
     create_info.clipped = VK_TRUE;
     create_info.oldSwapchain = VK_NULL_HANDLE;
 
-    vklib_display_swapchain_info_dispose(&info);
+    vklib_display_swapchain_info_destroy(&info);
 
     if (vkCreateSwapchainKHR(vkd->device, &create_info, NULL, &vkd->swapchain) != VK_SUCCESS)
     {
@@ -120,7 +120,7 @@ bool vklib_display_create_swapchain(GLFWwindow* window, vk_data* vkd)
     return true;
 }
 
-void vklib_display_dispose_swapchain(vk_data* vkd)
+void vklib_display_destroy_swapchain(vklibd* vkd)
 {
     assume(vkd);
     assume(vkd->swapchain);

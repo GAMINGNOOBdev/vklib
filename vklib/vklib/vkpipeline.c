@@ -4,7 +4,7 @@
 
 #include <memory.h>
 
-VkShaderModule vklib_pipeline_shader_module_create(vk_data* vkd, void* data, size_t size)
+VkShaderModule vklib_pipeline_shader_module_create(vklibd* vkd, void* data, size_t size)
 {
     assume(vkd, VK_NULL_HANDLE);
     assume(vkd->instance, VK_NULL_HANDLE);
@@ -24,7 +24,7 @@ VkShaderModule vklib_pipeline_shader_module_create(vk_data* vkd, void* data, siz
     return module;
 }
 
-void vklib_pipeline_shader_module_dispose(vk_data* vkd, VkShaderModule module)
+void vklib_pipeline_shader_module_destroy(vklibd* vkd, VkShaderModule module)
 {
     assume(vkd);
     assume(vkd->instance);
@@ -33,7 +33,7 @@ void vklib_pipeline_shader_module_dispose(vk_data* vkd, VkShaderModule module)
     vkDestroyShaderModule(vkd->device, module, NULL);
 }
 
-VkRenderPass vklib_pipeline_render_pass_create(vk_data* vkd)
+VkRenderPass vklib_pipeline_render_pass_create(vklibd* vkd)
 {
     assume(vkd, VK_NULL_HANDLE);
     assume(vkd->instance, VK_NULL_HANDLE);
@@ -73,14 +73,14 @@ VkRenderPass vklib_pipeline_render_pass_create(vk_data* vkd)
     return render_pass;
 }
 
-void vklib_pipeline_render_pass_dispose(vk_data* vkd, VkRenderPass render_pass)
+void vklib_pipeline_render_pass_destroy(vklibd* vkd, VkRenderPass render_pass)
 {
     assume(vkd && vkd->instance && render_pass);
 
     vkDestroyRenderPass(vkd->device, render_pass, NULL);
 }
 
-vklib_pipeline vklib_pipeline_create(vk_data* vkd, VkShaderModule vertex, VkShaderModule fragment, VkPrimitiveTopology draw_mode, bool wireframe)
+vklib_pipeline vklib_pipeline_create(vklibd* vkd, VkShaderModule vertex, VkShaderModule fragment, VkPrimitiveTopology draw_mode, bool wireframe)
 {
     vklib_pipeline pipeline = {};
     assume(vkd, pipeline);
@@ -217,12 +217,12 @@ vklib_pipeline vklib_pipeline_create(vk_data* vkd, VkShaderModule vertex, VkShad
     return pipeline;
 }
 
-void vklib_pipeline_dispose(vk_data* vkd, vklib_pipeline* pipeline)
+void vklib_pipeline_destroy(vklibd* vkd, vklib_pipeline* pipeline)
 {
     assume(vkd);
     assume(pipeline);
 
     vkDestroyPipeline(vkd->device, pipeline->handle, NULL);
     vkDestroyPipelineLayout(vkd->device, pipeline->layout, NULL);
-    vklib_pipeline_render_pass_dispose(vkd, pipeline->render_pass);
+    vklib_pipeline_render_pass_destroy(vkd, pipeline->render_pass);
 }

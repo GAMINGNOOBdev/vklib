@@ -42,7 +42,7 @@ bool vklib_dev_check_extensions(VkPhysicalDevice dev)
         u64_set_remove(&set, hash);
     }
     bool result = set.count == 0;
-    u64_set_dispose(&set);
+    u64_set_destroy(&set);
     free(extensions);
     return result;
 }
@@ -60,7 +60,7 @@ bool vklib_dev_is_suitable(VkSurfaceKHR surface, VkPhysicalDevice dev)
     return family.graphics_present && family.presentation_present && extensions_supported && swapchain_compatible;
 }
 
-bool vklib_dev_pick(vk_data* vkd)
+bool vklib_dev_pick(vklibd* vkd)
 {
     assume(vkd, false);
     assume(vkd->instance, false);
@@ -120,7 +120,7 @@ bool vklib_dev_pick(vk_data* vkd)
         return false;
 
     free(queue_create_info);
-    u32_set_dispose(&set);
+    u32_set_destroy(&set);
 
     vkGetDeviceQueue(vkd->device, indices.graphics, 0, &vkd->graphics_queue);
     vkGetDeviceQueue(vkd->device, indices.presentation, 0, &vkd->presentation_queue);
@@ -128,7 +128,7 @@ bool vklib_dev_pick(vk_data* vkd)
     return true;
 }
 
-bool vklib_dev_dispose(vk_data* vkd)
+bool vklib_dev_destroy(vklibd* vkd)
 {
     assume(vkd, false);
     assume(vkd->instance, false);

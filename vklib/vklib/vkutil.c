@@ -112,7 +112,7 @@ bool vklib_util_debugging_enabled(void)
     return ENGINE_VK_VALIDATION_LAYER_ENABLED;
 }
 
-bool vklib_util_init_debug_messenger(vk_data* vkd)
+bool vklib_util_init_debug_messenger(vklibd* vkd)
 {
     assume(vkd, false);
     assume(vkd->instance, false);
@@ -130,7 +130,7 @@ bool vklib_util_init_debug_messenger(vk_data* vkd)
     return evkCreateDebugUtilsMessengerEXT(vkd->instance, &create_info, NULL, &vkd->debug_messenger) == VK_SUCCESS;
 }
 
-void vklib_util_dispose_debug_messenger(vk_data* vkd)
+void vklib_util_destroy_debug_messenger(vklibd* vkd)
 {
     assume(vkd);
     assume(vkd->instance);

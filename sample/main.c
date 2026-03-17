@@ -1,10 +1,12 @@
 #include "vklib/vk.h"
+#include "vklib/vkcmd.h"
 #include "vklib/vkpipeline.h"
 
 #include <stdlib.h>
 #include <memory.h>
 #include <stdio.h>
 #include <time.h>
+#include <vulkan/vulkan_core.h>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -67,6 +69,44 @@ void* get_file_contents(const char* filename, size_t* sizeptr)
     return result;
 }
 
+void render_frame(vklibd* vkd, vklib_pipeline* pipeline, vklib_cmd* cmd, int idx)
+{
+    assume(vkd && pipeline && cmd);
+
+    VkRenderPassBeginInfo render_pass_info = {};
+    render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    render_pass_info.renderPass = pipeline->render_pass;
+    render_pass_info.framebuffer = vkd->framebuffers[idx];
+    render_pass_info.renderArea.offset = (VkOffset2D){0,0};
+    render_pass_info.renderArea.extent = vkd->swapchain_extent;
+
+    VkClearValue clear_color = (VkClearValue){.color = {.float32 = {0,0,0,1}}};
+    render_pass_info.clearValueCount = 1;
+    render_pass_info.pClearValues = &clear_color;
+
+    vkCmdBeginRenderPass(cmd->buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+    {
+        vkCmdBindPipeline(cmd->buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
+
+        VkViewport viewport = {};
+        viewport.x = viewport.y = 0;
+        viewport.width = (float)vkd->swapchain_extent.width;
+        viewport.height = (float)vkd->swapchain_extent.height;
+        viewport.minDepth = 0;
+        viewport.maxDepth = 1;
+        vkCmdSetViewport(cmd->buffer, 0, 1, &viewport);
+
+        VkRect2D scissor = {
+            .offset = {0,0},
+            .extent = vkd->swapchain_extent
+        };
+        vkCmdSetScissor(cmd->buffer, 0, 1, &scissor);
+
+        vkCmdDraw(cmd->buffer, 3, 1, 0, 0);
+    }
+    vkCmdEndRenderPass(cmd->buffer);
+}
+
 int main()
 {
     glfwInit();
@@ -74,9 +114,14 @@ int main()
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "vulkan sample app", NULL, NULL);
 
-    vk_data vkd = vklib_init(window, log_msg);
+    vklibd vkd = vklib_init((vklibd_init_data){
+        .window = window,
+        .logfunc = log_msg,
+        .app_name = "vulkan sample app",
+        .engine_name = "None"
+    });
 
     size_t size = 0;
     void* data = NULL;
@@ -91,17 +136,28 @@ int main()
     );
 
     vklib_pipeline pipeline = vklib_pipeline_create(&vkd, vertex_shader, fragment_shader, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
+    vklib_init_framebuffers(&vkd, pipeline.render_pass);
+
+    vklib_cmd cmd = vklib_cmd_create(&vkd);
 
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
+
+        // vklib_cmd_begin(&cmd, &pipeline);
+
+        // render_frame(&vkd, &pipeline, &cmd, 0);
+
+        // vklib_cmd_end(&cmd);
     }
 
-    vklib_pipeline_dispose(&vkd, &pipeline);
-    vklib_pipeline_shader_module_dispose(&vkd, vertex_shader);
-    vklib_pipeline_shader_module_dispose(&vkd, fragment_shader);
+    vklib_cmd_destroy(&vkd, &cmd);
 
-    vklib_dispose(&vkd);
+    vklib_pipeline_destroy(&vkd, &pipeline);
+    vklib_pipeline_shader_module_destroy(&vkd, vertex_shader);
+    vklib_pipeline_shader_module_destroy(&vkd, fragment_shader);
+
+    vklib_destroy(&vkd);
 
     glfwDestroyWindow(window);
     glfwTerminate();
