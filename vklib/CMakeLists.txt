@@ -13,6 +13,7 @@ set(project_sources
     vklib/vkdisplay.c
     vklib/vkframebuffer.c
     vklib/vkpipeline.c
+    vklib/vkrenderer.c
     vklib/vkutil.c
 )
 

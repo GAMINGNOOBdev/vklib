@@ -2,7 +2,6 @@
 #define __VKLIB__VKFRAMEBUFFER_H_
 
 #include "vk.h"
-#include "vkpipeline.h"
 
 #include <stdint.h>
 #include <stdbool.h>

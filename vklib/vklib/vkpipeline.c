@@ -64,6 +64,17 @@ VkRenderPass vklib_pipeline_render_pass_create(vklibd* vkd)
     render_pass_info.subpassCount = 1;
     render_pass_info.pSubpasses = &subpass;
 
+    VkSubpassDependency dependency = {};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    render_pass_info.dependencyCount = 1;
+    render_pass_info.pDependencies = &dependency;
+
     VkRenderPass render_pass = VK_NULL_HANDLE;
     if (vkCreateRenderPass(vkd->device, &render_pass_info, NULL, &render_pass) != VK_SUCCESS)
     {

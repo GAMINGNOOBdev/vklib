@@ -1,6 +1,7 @@
 #include "vklib/vk.h"
 #include "vklib/vkcmd.h"
 #include "vklib/vkpipeline.h"
+#include "vklib/vkrenderer.h"
 
 #include <stdlib.h>
 #include <memory.h>
@@ -69,42 +70,25 @@ void* get_file_contents(const char* filename, size_t* sizeptr)
     return result;
 }
 
-void render_frame(vklibd* vkd, vklib_pipeline* pipeline, vklib_cmd* cmd, int idx)
+void render_frame(vklibd* vkd, vklib_renderer* renderer)
 {
-    assume(vkd && pipeline && cmd);
+    assume(vkd && renderer);
 
-    VkRenderPassBeginInfo render_pass_info = {};
-    render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    render_pass_info.renderPass = pipeline->render_pass;
-    render_pass_info.framebuffer = vkd->framebuffers[idx];
-    render_pass_info.renderArea.offset = (VkOffset2D){0,0};
-    render_pass_info.renderArea.extent = vkd->swapchain_extent;
+    VkViewport viewport = {};
+    viewport.x = viewport.y = 0;
+    viewport.width = (float)vkd->swapchain_extent.width;
+    viewport.height = (float)vkd->swapchain_extent.height;
+    viewport.minDepth = 0;
+    viewport.maxDepth = 1;
+    vkCmdSetViewport(renderer->cmd->buffer, 0, 1, &viewport);
 
-    VkClearValue clear_color = (VkClearValue){.color = {.float32 = {0,0,0,1}}};
-    render_pass_info.clearValueCount = 1;
-    render_pass_info.pClearValues = &clear_color;
+    VkRect2D scissor = {
+        .offset = {0,0},
+        .extent = vkd->swapchain_extent
+    };
+    vkCmdSetScissor(renderer->cmd->buffer, 0, 1, &scissor);
 
-    vkCmdBeginRenderPass(cmd->buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-    {
-        vkCmdBindPipeline(cmd->buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
-
-        VkViewport viewport = {};
-        viewport.x = viewport.y = 0;
-        viewport.width = (float)vkd->swapchain_extent.width;
-        viewport.height = (float)vkd->swapchain_extent.height;
-        viewport.minDepth = 0;
-        viewport.maxDepth = 1;
-        vkCmdSetViewport(cmd->buffer, 0, 1, &viewport);
-
-        VkRect2D scissor = {
-            .offset = {0,0},
-            .extent = vkd->swapchain_extent
-        };
-        vkCmdSetScissor(cmd->buffer, 0, 1, &scissor);
-
-        vkCmdDraw(cmd->buffer, 3, 1, 0, 0);
-    }
-    vkCmdEndRenderPass(cmd->buffer);
+    vkCmdDraw(renderer->cmd->buffer, 3, 1, 0, 0);
 }
 
 int main()
@@ -140,16 +124,19 @@ int main()
 
     vklib_cmd cmd = vklib_cmd_create(&vkd);
 
+    vklib_renderer renderer = vklib_renderer_create(&vkd, &pipeline, &cmd);
+
+    VkClearValue clear_color = (VkClearValue){.color = {.float32 = {0,0,0,1}}};
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
 
-        // vklib_cmd_begin(&cmd, &pipeline);
-
-        // render_frame(&vkd, &pipeline, &cmd, 0);
-
-        // vklib_cmd_end(&cmd);
+        vklib_renderer_begin(&vkd, &renderer, clear_color);
+            render_frame(&vkd, &renderer);
+        vklib_renderer_end(&vkd, &renderer);
     }
+
+    vklib_renderer_destroy(&vkd, &renderer);
 
     vklib_cmd_destroy(&vkd, &cmd);
 
