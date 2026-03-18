@@ -11,12 +11,13 @@
 typedef struct
 {
     VkCommandPool pool;
-    VkCommandBuffer buffer;
+    uint32_t buffer_count;
+    VkCommandBuffer* buffers;
 } vklib_cmd;
 
-VKLIBAPI vklib_cmd vklib_cmd_create(vklibd* vkd);
-VKLIBAPI bool vklib_cmd_begin(vklib_cmd* cmd, vklib_pipeline* pipeline);
-VKLIBAPI void vklib_cmd_end(vklib_cmd* cmd);
+VKLIBAPI vklib_cmd vklib_cmd_create(vklibd* vkd, uint32_t buffer_count);
+VKLIBAPI bool vklib_cmd_begin(vklib_cmd* cmd, vklib_pipeline* pipeline, uint32_t idx);
+VKLIBAPI void vklib_cmd_end(vklib_cmd* cmd, uint32_t idx);
 VKLIBAPI void vklib_cmd_destroy(vklibd* vkd, vklib_cmd* cmd);
 
 #endif

@@ -1,5 +1,4 @@
 #include "vklib/vk.h"
-#include "vklib/vkcmd.h"
 #include "vklib/vkpipeline.h"
 #include "vklib/vkrenderer.h"
 
@@ -74,21 +73,23 @@ void render_frame(vklibd* vkd, vklib_renderer* renderer)
 {
     assume(vkd && renderer);
 
+    VkCommandBuffer cmd = vklib_renderer_get_current_cmd_buffer(renderer);
+
     VkViewport viewport = {};
     viewport.x = viewport.y = 0;
     viewport.width = (float)vkd->swapchain_extent.width;
     viewport.height = (float)vkd->swapchain_extent.height;
     viewport.minDepth = 0;
     viewport.maxDepth = 1;
-    vkCmdSetViewport(renderer->cmd->buffer, 0, 1, &viewport);
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
 
     VkRect2D scissor = {
         .offset = {0,0},
         .extent = vkd->swapchain_extent
     };
-    vkCmdSetScissor(renderer->cmd->buffer, 0, 1, &scissor);
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-    vkCmdDraw(renderer->cmd->buffer, 3, 1, 0, 0);
+    vkCmdDraw(cmd, 3, 1, 0, 0);
 }
 
 int main()
@@ -122,9 +123,7 @@ int main()
     vklib_pipeline pipeline = vklib_pipeline_create(&vkd, vertex_shader, fragment_shader, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
     vklib_init_framebuffers(&vkd, pipeline.render_pass);
 
-    vklib_cmd cmd = vklib_cmd_create(&vkd);
-
-    vklib_renderer renderer = vklib_renderer_create(&vkd, &pipeline, &cmd);
+    vklib_renderer renderer = vklib_renderer_create(&vkd, &pipeline, 2);
 
     VkClearValue clear_color = (VkClearValue){.color = {.float32 = {0,0,0,1}}};
     while (!glfwWindowShouldClose(window))
@@ -137,8 +136,6 @@ int main()
     }
 
     vklib_renderer_destroy(&vkd, &renderer);
-
-    vklib_cmd_destroy(&vkd, &cmd);
 
     vklib_pipeline_destroy(&vkd, &pipeline);
     vklib_pipeline_shader_module_destroy(&vkd, vertex_shader);
