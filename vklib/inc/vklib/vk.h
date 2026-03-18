@@ -7,16 +7,16 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-// #ifdef WIN32
+#ifdef WIN32
 // #   ifdef VKLIB_BUILD
 // #       define VKLIBAPI __declspec(dllexport)
 // #   else
 // #       define VKLIBAPI __declspec(dllimport)
 // #   endif
-// #   define __FILE_NAME__ __FILE__
+#   define __FILE_NAME__ __FILE__
 // #else
 // #   define VKLIBAPI
-// #endif
+#endif
 /// FIXME: shared library version not working for unknown reasons
 #define VKLIBAPI
 
