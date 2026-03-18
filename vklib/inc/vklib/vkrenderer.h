@@ -23,8 +23,8 @@ typedef struct
 
 VKLIBAPI vklib_renderer vklib_renderer_create(vklibd* vkd, vklib_pipeline* pipeline, uint32_t max_frame_in_flight);
 VKLIBAPI VkCommandBuffer vklib_renderer_get_current_cmd_buffer(vklib_renderer* renderer);
-VKLIBAPI void vklib_renderer_begin(vklibd* vkd, vklib_renderer* renderer, VkClearValue clear_color);
-VKLIBAPI void vklib_renderer_end(vklibd* vkd, vklib_renderer* renderer);
+VKLIBAPI bool vklib_renderer_begin(vklibd* vkd, vklib_renderer* renderer, VkClearValue clear_color);
+VKLIBAPI bool vklib_renderer_end(vklibd* vkd, vklib_renderer* renderer);
 VKLIBAPI void vklib_renderer_destroy(vklibd* vkd, vklib_renderer* renderer);
 
 #endif

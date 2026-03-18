@@ -92,12 +92,17 @@ void render_frame(vklibd* vkd, vklib_renderer* renderer)
     vkCmdDraw(cmd, 3, 1, 0, 0);
 }
 
+void resize_callback(GLFWwindow* window, int width, int height)
+{
+    vklibd* data = glfwGetWindowUserPointer(window);
+    data->window_resized = true;
+}
+
 int main()
 {
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "vulkan sample app", NULL, NULL);
 
@@ -107,6 +112,8 @@ int main()
         .app_name = "vulkan sample app",
         .engine_name = "None"
     });
+    glfwSetWindowUserPointer(window, &vkd);
+    glfwSetFramebufferSizeCallback(window, resize_callback);
 
     size_t size = 0;
     void* data = NULL;
@@ -121,7 +128,7 @@ int main()
     );
 
     vklib_pipeline pipeline = vklib_pipeline_create(&vkd, vertex_shader, fragment_shader, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
-    vklib_init_framebuffers(&vkd, pipeline.render_pass);
+    vklib_framebuffers_init(&vkd, pipeline.render_pass);
 
     vklib_renderer renderer = vklib_renderer_create(&vkd, &pipeline, 2);
 
@@ -130,9 +137,11 @@ int main()
     {
         glfwPollEvents();
 
-        vklib_renderer_begin(&vkd, &renderer, clear_color);
+        if (vklib_renderer_begin(&vkd, &renderer, clear_color))
+        {
             render_frame(&vkd, &renderer);
-        vklib_renderer_end(&vkd, &renderer);
+            vklib_renderer_end(&vkd, &renderer);
+        }
     }
 
     vklib_renderer_destroy(&vkd, &renderer);

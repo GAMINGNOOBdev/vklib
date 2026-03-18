@@ -38,7 +38,7 @@ void vklib_display_swapchain_info_destroy(vklib_display_swapchain_info* info)
     free(info->present_modes);
 }
 
-bool vklib_display_create_swapchain(GLFWwindow* window, vklibd* vkd)
+bool vklib_display_create_swapchain(vklibd* vkd)
 {
     assume(vkd, false);
     assume(vkd->physical_device != VK_NULL_HANDLE, false);
@@ -46,7 +46,7 @@ bool vklib_display_create_swapchain(GLFWwindow* window, vklibd* vkd)
     vklib_display_swapchain_info info = vklib_display_query_swapchain_info(vkd->surface, vkd->physical_device, true);
     VkSurfaceFormatKHR surface_format = vklib_util_choose_swap_surface_format(info.formats, info.format_count);
     VkPresentModeKHR present_mode = vklib_util_choose_swap_present_mode(info.present_modes, info.present_mode_count);
-    VkExtent2D extent = vklib_util_choose_swap_extent(window, info.capabilities);
+    VkExtent2D extent = vklib_util_choose_swap_extent(vkd->window, info.capabilities);
 
     vkd->swapchain_image_count = info.capabilities.minImageCount + 1;
     if (info.capabilities.maxImageCount > 0 && vkd->swapchain_image_count > info.capabilities.maxImageCount)

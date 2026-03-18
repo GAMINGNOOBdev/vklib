@@ -7,6 +7,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <stdbool.h>
+
 #ifdef WIN32
 // #   ifdef VKLIB_BUILD
 // #       define VKLIBAPI __declspec(dllexport)
@@ -56,6 +58,10 @@ typedef struct
     VkExtent2D swapchain_extent;
     VkFormat swapchain_format;
     VkSwapchainKHR swapchain;
+
+    VkRenderPass last_render_pass;
+    bool window_resized;
+    GLFWwindow* window;
 } vklibd;
 
 typedef struct
@@ -69,7 +75,9 @@ typedef struct
 extern vklib_log_msg_t vklib_log_msg;
 
 VKLIBAPI vklibd vklib_init(vklibd_init_data init_data);
-VKLIBAPI void vklib_init_framebuffers(vklibd* vkd, VkRenderPass render_pass);
+VKLIBAPI void vklib_handle_view_changes(vklibd* vkd);
+VKLIBAPI void vklib_framebuffers_init(vklibd* vkd, VkRenderPass render_pass);
+VKLIBAPI void vklib_framebuffers_destroy(vklibd* vkd);
 VKLIBAPI void vklib_destroy(vklibd* vkd);
 
 const char* vklib_strfmt(const char* fmt, ...);

@@ -44,9 +44,9 @@ VkCommandBuffer vklib_renderer_get_current_cmd_buffer(vklib_renderer* renderer)
     return renderer->cmd.buffers[renderer->frame];
 }
 
-void vklib_renderer_begin(vklibd* vkd, vklib_renderer* renderer, VkClearValue clear_color)
+bool vklib_renderer_begin(vklibd* vkd, vklib_renderer* renderer, VkClearValue clear_color)
 {
-    assume(vkd && renderer);
+    assume(vkd && renderer, false);
 
     VkCommandBuffer buffer = vklib_renderer_get_current_cmd_buffer(renderer);
     VkFence* frame_in_flight = &renderer->frames_in_flight[renderer->frame];
@@ -54,7 +54,17 @@ void vklib_renderer_begin(vklibd* vkd, vklib_renderer* renderer, VkClearValue cl
     VkSemaphore render_finished = renderer->renders_finished[renderer->frame];
 
     vkWaitForFences(vkd->device, 1, frame_in_flight, VK_TRUE, UINT64_MAX);
-    vkAcquireNextImageKHR(vkd->device, vkd->swapchain, UINT64_MAX, image_available, VK_NULL_HANDLE, &renderer->image);
+    VkResult result = vkAcquireNextImageKHR(vkd->device, vkd->swapchain, UINT64_MAX, image_available, VK_NULL_HANDLE, &renderer->image);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        vklib_handle_view_changes(vkd);
+        return false;
+    }
+    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+    {
+        LOGERROR("unable to acquire swapchain image");
+        return false;
+    }
 
     vkResetFences(vkd->device, 1, frame_in_flight);
     vkResetCommandBuffer(buffer, 0);
@@ -76,11 +86,13 @@ void vklib_renderer_begin(vklibd* vkd, vklib_renderer* renderer, VkClearValue cl
         vkCmdBeginRenderPass(buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->pipeline->handle);
     }
+
+    return true;
 }
 
-void vklib_renderer_end(vklibd* vkd, vklib_renderer* renderer)
+bool vklib_renderer_end(vklibd* vkd, vklib_renderer* renderer)
 {
-    assume(vkd && renderer);
+    assume(vkd && renderer, false);
 
     VkCommandBuffer buffer = vklib_renderer_get_current_cmd_buffer(renderer);
     VkFence* frame_in_flight = &renderer->frames_in_flight[renderer->frame];
@@ -109,7 +121,7 @@ void vklib_renderer_end(vklibd* vkd, vklib_renderer* renderer)
     submit_info.signalSemaphoreCount = 1;
     submit_info.pSignalSemaphores = signal_semaphores;
 
-    assume(vkQueueSubmit(vkd->graphics_queue, 1, &submit_info, renderer->frames_in_flight[renderer->frame]) == VK_SUCCESS);
+    assume(vkQueueSubmit(vkd->graphics_queue, 1, &submit_info, renderer->frames_in_flight[renderer->frame]) == VK_SUCCESS, false);
 
     VkPresentInfoKHR present_info = {};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -122,9 +134,20 @@ void vklib_renderer_end(vklibd* vkd, vklib_renderer* renderer)
     present_info.pImageIndices = &renderer->image;
     present_info.pResults = NULL;
 
-    vkQueuePresentKHR(vkd->presentation_queue, &present_info);
+    VkResult result = vkQueuePresentKHR(vkd->presentation_queue, &present_info);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || vkd->window_resized)
+    {
+        vkd->window_resized = false;
+        vklib_handle_view_changes(vkd);
+    }
+    else if (result != VK_SUCCESS)
+    {
+        LOGERROR("unable to present swapchain image");
+        return false;
+    }
 
     renderer->frame = (renderer->frame + 1) % renderer->max_frames_in_flight;
+    return true;
 }
 
 void vklib_renderer_destroy(vklibd* vkd, vklib_renderer* renderer)

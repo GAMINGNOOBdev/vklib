@@ -79,6 +79,7 @@ vklibd vklib_init(vklibd_init_data init_data)
     }
     free((void*)create_info.ppEnabledExtensionNames);
     volkLoadInstance(vkd.instance);
+    vkd.window = init_data.window;
 
     if (!vklib_util_init_debug_messenger(&vkd))
     {
@@ -87,7 +88,7 @@ vklibd vklib_init(vklibd_init_data init_data)
     }
 
     // presentation setup
-    if (glfwCreateWindowSurface(vkd.instance, init_data.window, NULL, &vkd.surface) != VK_SUCCESS)
+    if (glfwCreateWindowSurface(vkd.instance, vkd.window, NULL, &vkd.surface) != VK_SUCCESS)
     {
         LOGERROR("could not create a window surface");
         return vkd;
@@ -99,31 +100,62 @@ vklibd vklib_init(vklibd_init_data init_data)
         return vkd;
     }
 
-    if (!vklib_display_create_swapchain(init_data.window, &vkd))
+    if (!vklib_display_create_swapchain(&vkd))
     {
         LOGERROR("failed to create swap chain");
         return vkd;
     }
+
 
     LOGINFO("Initialized vulkan");
 
     return vkd;
 }
 
-void vklib_init_framebuffers(vklibd* vkd, VkRenderPass render_pass)
+VKLIBAPI void vklib_handle_view_changes(vklibd* vkd)
 {
     assume(vkd && vkd->instance);
 
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(vkd->window, &width, &height);
+    while (width == 0 || height == 0)
+    {
+        glfwGetFramebufferSize(vkd->window, &width, &height);
+        glfwWaitEvents();
+    }
+
+    vkDeviceWaitIdle(vkd->device);
+
+    vklib_framebuffers_destroy(vkd);
+    vklib_display_destroy_swapchain(vkd);
+
+    vklib_display_create_swapchain(vkd);
+    vklib_framebuffers_init(vkd, vkd->last_render_pass);
+}
+
+void vklib_framebuffers_init(vklibd* vkd, VkRenderPass render_pass)
+{
+    assume(vkd && vkd->instance);
+
+    vkd->last_render_pass = render_pass;
+
     vkd->framebuffers = malloc(sizeof(VkFramebuffer) * vkd->swapchain_image_count);
     vklib_framebuffer_create(vkd, render_pass, vkd->swapchain_image_count, vkd->framebuffers, vkd->swapchain_image_views);
+}
+
+void vklib_framebuffers_destroy(vklibd* vkd)
+{
+    assume(vkd);
+
+    vklib_framebuffer_destroy(vkd, vkd->swapchain_image_count, vkd->framebuffers);
+    free(vkd->framebuffers);
 }
 
 void vklib_destroy(vklibd* vkd)
 {
     assume(vkd && vkd->instance);
 
-    vklib_framebuffer_destroy(vkd, vkd->swapchain_image_count, vkd->framebuffers);
-    free(vkd->framebuffers);
+    vklib_framebuffers_destroy(vkd);
 
     vklib_display_destroy_swapchain(vkd);
 
