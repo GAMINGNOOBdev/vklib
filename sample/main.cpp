@@ -114,12 +114,14 @@ int main()
 
     GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "vulkan sample app", NULL, NULL);
 
-    vklibd vkd = vklib_init((vklibd_init_data){
+    vklibd_init_data init_data = {
         .window = window,
         .app_name = "vulkan sample app",
         .engine_name = "None",
         .logfunc = log_msg,
-    });
+    };
+
+    vklibd vkd = vklib_init(init_data);
     glfwSetWindowUserPointer(window, &vkd);
     glfwSetFramebufferSizeCallback(window, resize_callback);
 
@@ -140,7 +142,11 @@ int main()
 
     vklib_renderer renderer = vklib_renderer_create(&vkd, &pipeline, 2);
 
-    VkClearValue clear_color = (VkClearValue){.color = {.float32 = {0,0,0,1}}};
+    VkClearValue clear_color = {};
+    clear_color.color.float32[0] = 0;
+    clear_color.color.float32[1] = 0;
+    clear_color.color.float32[2] = 0;
+    clear_color.color.float32[3] = 1;
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
