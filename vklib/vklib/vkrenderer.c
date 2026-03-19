@@ -20,21 +20,22 @@ vklib_renderer vklib_renderer_create(vklibd* vkd, vklib_pipeline* pipeline, uint
     renderer.pipeline = pipeline;
 
     renderer.images_available = malloc(sizeof(VkSemaphore)*renderer.max_frames_in_flight);
-    renderer.renders_finished = malloc(sizeof(VkSemaphore)*renderer.max_frames_in_flight);
     renderer.frames_in_flight = malloc(sizeof(VkFence)*renderer.max_frames_in_flight);
+    VkSemaphoreCreateInfo semaphore_info = {};
+    semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkFenceCreateInfo fence_info = {};
+    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     for (size_t i = 0; i < renderer.max_frames_in_flight; i++)
     {
-        VkSemaphoreCreateInfo semaphore_info = {};
-        semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        VkFenceCreateInfo fence_info = {};
-        fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
         assume(vkCreateSemaphore(vkd->device, &semaphore_info, NULL, &renderer.images_available[i]) == VK_SUCCESS, (vklib_renderer){});
-        assume(vkCreateSemaphore(vkd->device, &semaphore_info, NULL, &renderer.renders_finished[i]) == VK_SUCCESS, (vklib_renderer){});
         assume(vkCreateFence(vkd->device, &fence_info, NULL, &renderer.frames_in_flight[i]) == VK_SUCCESS, (vklib_renderer){});
     }
+    renderer.renders_finished = malloc(sizeof(VkSemaphore)*vkd->swapchain_image_count);
+    for (size_t i = 0; i < vkd->swapchain_image_count; i++)
+        assume(vkCreateSemaphore(vkd->device, &semaphore_info, NULL, &renderer.renders_finished[i]) == VK_SUCCESS, (vklib_renderer){});
 
     return renderer;
 }
@@ -44,7 +45,6 @@ VkCommandBuffer vklib_renderer_get_current_cmd_buffer(vklib_renderer* renderer)
     return renderer->cmd.buffers[renderer->frame];
 }
 
-#define render_finished renderer->renders_finished[renderer->frame]
 #define image_available renderer->images_available[renderer->frame]
 #define frame_in_flight renderer->frames_in_flight[renderer->frame]
 
@@ -90,6 +90,8 @@ bool vklib_renderer_begin(vklibd* vkd, vklib_renderer* renderer, VkClearValue cl
 
     return true;
 }
+
+#define render_finished renderer->renders_finished[renderer->image]
 
 bool vklib_renderer_end(vklibd* vkd, vklib_renderer* renderer)
 {
@@ -158,9 +160,10 @@ void vklib_renderer_destroy(vklibd* vkd, vklib_renderer* renderer)
     for (size_t i = 0; i < renderer->max_frames_in_flight; i++)
     {
         vkDestroySemaphore(vkd->device, renderer->images_available[i], NULL);
-        vkDestroySemaphore(vkd->device, renderer->renders_finished[i], NULL);
         vkDestroyFence(vkd->device, renderer->frames_in_flight[i], NULL);
     }
+    for (size_t i = 0; i < vkd->swapchain_image_count; i++)
+        vkDestroySemaphore(vkd->device, renderer->renders_finished[i], NULL);
 
     vklib_cmd_destroy(vkd, &renderer->cmd);
 }

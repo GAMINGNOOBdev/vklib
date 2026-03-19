@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 project(sample)
 
 include_directories(
@@ -25,6 +25,8 @@ add_custom_target(copy_assets
 
 add_executable(${PROJECT_NAME} ${project_sources})
 add_dependencies(${PROJECT_NAME} copy_assets)
+
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     vklib
