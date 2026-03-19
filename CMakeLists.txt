@@ -19,6 +19,7 @@ add_compile_definitions(__YEAR__=${YEAR})
 add_compile_definitions(__MONTH__=${MONTH})
 add_compile_definitions(__DAY__=${DAY})
 
+set( GLM_BUILD_LIBRARY OFF CACHE BOOL  "Build dynamic/static library" )
 set( GLFW_BUILD_EXAMPLES OFF CACHE BOOL "GLFW lib only")
 set( GLFW_BUILD_TESTS OFF CACHE BOOL "GLFW lib only" )
 set( GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW lib only" )
@@ -27,6 +28,7 @@ set( GLFW_LIBRARY_TYPE "SHARED" )
 set( BUILD_SHARED_LIBS ON )
 
 add_subdirectory(glfw)
+add_subdirectory(glm)
 
 find_package(Vulkan REQUIRED)
 add_subdirectory(volk)

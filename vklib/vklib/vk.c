@@ -10,7 +10,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-vklib_log_msg_t vklib_log_msg = NULL;
+void vklib_log_msg_fallback(uint8_t lvl, const char* msg, const char* file, int line){}
+
+vklib_log_msg_t vklib_log_msg = vklib_log_msg_fallback;
 
 const char* vklib_strfmt(const char* fmt, ...)
 {
@@ -36,7 +38,8 @@ vklibd vklib_init(vklibd_init_data init_data)
     if (!init_data.window || !init_data.logfunc)
         return vkd;
 
-    vklib_log_msg = init_data.logfunc;
+    if (init_data.logfunc != NULL)
+        vklib_log_msg = init_data.logfunc;
 
     if (volkInitialize() != VK_SUCCESS)
         return vkd;

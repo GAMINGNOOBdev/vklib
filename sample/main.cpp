@@ -133,7 +133,7 @@ int main()
         vertex_shader = vklib_pipeline_shader_module_create(&vkd, data, size);
     );
     using(data,
-        data = get_file_contents("assets/triangle.frag.spv", &size);
+        data = get_file_contents("assets/basic.frag.spv", &size);
         fragment_shader = vklib_pipeline_shader_module_create(&vkd, data, size);
     );
 
