@@ -8,6 +8,10 @@
 #include <time.h>
 #include <vulkan/vulkan_core.h>
 
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -94,9 +98,13 @@ void render_frame(vklibd* vkd, vklib_renderer* renderer)
 
 void resize_callback(GLFWwindow* window, int width, int height)
 {
-    vklibd* data = glfwGetWindowUserPointer(window);
-    data->window_resized = true;
+    vklibd* vkd = reinterpret_cast<vklibd*>(glfwGetWindowUserPointer(window));
+    vkd->window_resized = true;
 }
+
+ImGuiIO* mImGuiIO = NULL;
+ImGuiStyle* mImGuiStyle = NULL;
+ImGuiContext* mImGuiContext = NULL;
 
 int main()
 {
@@ -108,9 +116,9 @@ int main()
 
     vklibd vkd = vklib_init((vklibd_init_data){
         .window = window,
-        .logfunc = log_msg,
         .app_name = "vulkan sample app",
-        .engine_name = "None"
+        .engine_name = "None",
+        .logfunc = log_msg,
     });
     glfwSetWindowUserPointer(window, &vkd);
     glfwSetFramebufferSizeCallback(window, resize_callback);
@@ -140,6 +148,7 @@ int main()
         if (vklib_renderer_begin(&vkd, &renderer, clear_color))
         {
             render_frame(&vkd, &renderer);
+
             vklib_renderer_end(&vkd, &renderer);
         }
     }

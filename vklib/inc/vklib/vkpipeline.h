@@ -1,6 +1,10 @@
 #ifndef __VKLIB__VKPIPELINE_H_
 #define __VKLIB__VKPIPELINE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "vk.h"
 
 #include <stdint.h>
@@ -24,5 +28,9 @@ VKLIBAPI void vklib_pipeline_render_pass_destroy(vklibd* vkd, VkRenderPass rende
 
 VKLIBAPI vklib_pipeline vklib_pipeline_create(vklibd* vkd, VkShaderModule vertex, VkShaderModule fragment, VkPrimitiveTopology draw_mode, bool wireframe);
 VKLIBAPI void vklib_pipeline_destroy(vklibd* vkd, vklib_pipeline* pipeline);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

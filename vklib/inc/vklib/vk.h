@@ -1,6 +1,10 @@
 #ifndef __VKLIB__VK_H_
 #define __VKLIB__VK_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <volk.h>
 
 #include <vulkan/vulkan_core.h>
@@ -81,5 +85,9 @@ VKLIBAPI void vklib_framebuffers_destroy(vklibd* vkd);
 VKLIBAPI void vklib_destroy(vklibd* vkd);
 
 const char* vklib_strfmt(const char* fmt, ...);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

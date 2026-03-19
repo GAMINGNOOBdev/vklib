@@ -1,6 +1,10 @@
 #ifndef __VKLIB__VKRENDERER_H_
 #define __VKLIB__VKRENDERER_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "vk.h"
 #include "vklib/vkcmd.h"
 
@@ -26,5 +30,9 @@ VKLIBAPI VkCommandBuffer vklib_renderer_get_current_cmd_buffer(vklib_renderer* r
 VKLIBAPI bool vklib_renderer_begin(vklibd* vkd, vklib_renderer* renderer, VkClearValue clear_color);
 VKLIBAPI bool vklib_renderer_end(vklibd* vkd, vklib_renderer* renderer);
 VKLIBAPI void vklib_renderer_destroy(vklibd* vkd, vklib_renderer* renderer);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

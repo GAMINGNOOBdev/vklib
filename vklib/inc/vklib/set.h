@@ -1,6 +1,10 @@
 #ifndef __VKLIB__SET_H_
 #define __VKLIB__SET_H_ 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -89,5 +93,9 @@ typedef uint64_t u64;
 
 DECLARE_SET(u32);
 DECLARE_SET(u64);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
