@@ -16,6 +16,7 @@ set(project_sources
     vklib/vkpipeline.c
     vklib/vkrenderer.c
     vklib/vkutil.c
+    vklib/vkvertexbuffer.c
 )
 
 add_library(${PROJECT_NAME} STATIC ${project_sources})

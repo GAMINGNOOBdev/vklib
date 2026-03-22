@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include "vk.h"
+#include "vkcmd.h"
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -14,7 +15,6 @@ extern "C" {
 typedef struct
 {
     VkDeviceSize size;
-    VkSharingMode mode;
     VkBufferUsageFlags usage;
     VkMemoryPropertyFlags memflags;
 } vklib_buffer_create_info;
@@ -28,6 +28,7 @@ typedef struct
 
 VKLIBAPI vklib_buffer vklib_buffer_create(vklibd* vkd, vklib_buffer_create_info* info);
 VKLIBAPI void vklib_buffer_fill_data(vklibd* vkd, vklib_buffer* buffer, const void* data, VkDeviceSize size);
+VKLIBAPI void vklib_buffer_copy(vklibd* vkd, vklib_cmd* cmd, vklib_buffer* dst, vklib_buffer* src, VkDeviceSize size);
 VKLIBAPI void vklib_buffer_destroy(vklibd* vkd, vklib_buffer* buffer);
 
 #ifdef __cplusplus

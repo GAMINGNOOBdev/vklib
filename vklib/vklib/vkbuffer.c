@@ -29,7 +29,7 @@ vklib_buffer vklib_buffer_create(vklibd* vkd, vklib_buffer_create_info* info)
     buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer_info.size = info->size;
     buffer_info.usage = info->usage;
-    buffer_info.sharingMode = info->mode;
+    buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     assume(vkCreateBuffer(vkd->device, &buffer_info, NULL, &buffer.buffer) == VK_SUCCESS, (vklib_buffer){});
 
@@ -53,7 +53,7 @@ void vklib_buffer_fill_data(vklibd* vkd, vklib_buffer* buffer, const void* data,
 {
     assume(vkd && buffer && data);
 
-    if (size == (VkDeviceSize)-1 || size > (buffer->size))
+    if (size == (VkDeviceSize)-1 || size > (buffer->size) || size == 0)
         size = buffer->size;
 
     void* mem;
@@ -62,6 +62,45 @@ void vklib_buffer_fill_data(vklibd* vkd, vklib_buffer* buffer, const void* data,
     memcpy(mem, data, size);
 
     vkUnmapMemory(vkd->device, buffer->memory);
+}
+
+void vklib_buffer_copy(vklibd* vkd, vklib_cmd* cmd, vklib_buffer* dst, vklib_buffer* src, VkDeviceSize size)
+{
+    assume(vkd && cmd && dst && src);
+    VkDeviceSize max_size = dst->size > src->size ? src->size : dst->size;
+    if (size == (VkDeviceSize)-1 || size > max_size || size == 0)
+        size = max_size;
+
+    VkCommandBufferAllocateInfo alloc_info = {};
+    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    alloc_info.commandPool = cmd->pool;
+    alloc_info.commandBufferCount = 1;
+
+    VkCommandBuffer cmdbuf;
+    vkAllocateCommandBuffers(vkd->device, &alloc_info, &cmdbuf);
+
+    VkCommandBufferBeginInfo begin_info = {};
+    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(cmdbuf, &begin_info);
+
+    VkBufferCopy copy_info = {};
+    copy_info.size = size;
+    vkCmdCopyBuffer(cmdbuf, src->buffer, dst->buffer, 1, &copy_info);
+
+    vkEndCommandBuffer(cmdbuf);
+
+    VkSubmitInfo submit_info = {};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &cmdbuf;
+
+    vkQueueSubmit(vkd->graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
+    vkQueueWaitIdle(vkd->graphics_queue);
+
+    vkFreeCommandBuffers(vkd->device, cmd->pool, 1, &cmdbuf);
 }
 
 void vklib_buffer_destroy(vklibd* vkd, vklib_buffer* buffer)

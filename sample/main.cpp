@@ -1,7 +1,7 @@
 #include "vklib/vk.h"
-#include "vklib/vkbuffer.h"
 #include "vklib/vkpipeline.h"
 #include "vklib/vkrenderer.h"
+#include "vklib/vkvertexbuffer.h"
 
 #include <stdlib.h>
 #include <memory.h>
@@ -76,7 +76,7 @@ void* get_file_contents(const char* filename, size_t* sizeptr)
     return result;
 }
 
-void render_frame(vklibd* vkd, vklib_renderer* renderer, vklib_buffer* vertexbuffer)
+void render_frame(vklibd* vkd, vklib_renderer* renderer, vklib_vertex_buffer* vbo)
 {
     assume(vkd && renderer);
 
@@ -96,10 +96,7 @@ void render_frame(vklibd* vkd, vklib_renderer* renderer, vklib_buffer* vertexbuf
     };
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexbuffer->buffer, offsets);
-
-    vkCmdDraw(cmd, vertexbuffer->size / sizeof(Vertex), 1, 0, 0);
+    vklib_vertex_buffer_render(vbo, cmd);
 }
 
 void resize_callback(GLFWwindow* window, int width, int height)
@@ -157,19 +154,12 @@ int main()
         {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
     };
 
-    vklib_buffer_create_info vbo_info = {};
-    vbo_info.size = sizeof(Vertex) * vertices.size();
-    vbo_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    vbo_info.mode = VK_SHARING_MODE_EXCLUSIVE;
-    vbo_info.memflags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    vklib_buffer vbo = vklib_buffer_create(&vkd, &vbo_info);
-
-    vklib_buffer_fill_data(&vkd, &vbo, vertices.data(), -1);
-
     vklib_pipeline pipeline = vklib_pipeline_create(&vkd, &pipeline_info);
     vklib_framebuffers_init(&vkd, pipeline.render_pass);
 
     vklib_renderer renderer = vklib_renderer_create(&vkd, &pipeline, 2);
+
+    vklib_vertex_buffer vbo = vklib_vertex_buffer_create(&vkd, &renderer.cmd, vertices.data(), sizeof(Vertex), vertices.size());
 
     VkClearValue clear_color = {};
     clear_color.color.float32[0] = 0;
@@ -188,9 +178,9 @@ int main()
         }
     }
 
-    vklib_buffer_destroy(&vkd, &vbo);
-
     vklib_renderer_destroy(&vkd, &renderer);
+
+    vklib_vertex_buffer_destroy(&vkd, &vbo);
 
     vklib_pipeline_destroy(&vkd, &pipeline);
     vklib_pipeline_shader_module_destroy(&vkd, pipeline_info.vertex);
