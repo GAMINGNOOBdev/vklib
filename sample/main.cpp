@@ -1,4 +1,5 @@
 #include "vklib/vk.h"
+#include "vklib/vkbuffer.h"
 #include "vklib/vkpipeline.h"
 #include "vklib/vkrenderer.h"
 
@@ -9,6 +10,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include <imgui.h>
+#include "vertex.hpp"
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 
@@ -73,7 +75,7 @@ void* get_file_contents(const char* filename, size_t* sizeptr)
     return result;
 }
 
-void render_frame(vklibd* vkd, vklib_renderer* renderer)
+void render_frame(vklibd* vkd, vklib_renderer* renderer, vklib_buffer* vertexbuffer)
 {
     assume(vkd && renderer);
 
@@ -93,7 +95,10 @@ void render_frame(vklibd* vkd, vklib_renderer* renderer)
     };
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-    vkCmdDraw(cmd, 3, 1, 0, 0);
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexbuffer->buffer, offsets);
+
+    vkCmdDraw(cmd, vertexbuffer->size / sizeof(Vertex), 1, 0, 0);
 }
 
 void resize_callback(GLFWwindow* window, int width, int height)
@@ -125,19 +130,42 @@ int main()
     glfwSetWindowUserPointer(window, &vkd);
     glfwSetFramebufferSizeCallback(window, resize_callback);
 
+    vklib_pipeline_create_info pipeline_info = {};
+
     size_t size = 0;
     void* data = NULL;
-    VkShaderModule vertex_shader, fragment_shader;
     using(data,
-        data = get_file_contents("assets/triangle.vert.spv", &size);
-        vertex_shader = vklib_pipeline_shader_module_create(&vkd, data, size);
+        data = get_file_contents("assets/buffered.vert.spv", &size);
+        pipeline_info.vertex = vklib_pipeline_shader_module_create(&vkd, data, size);
     );
     using(data,
         data = get_file_contents("assets/basic.frag.spv", &size);
-        fragment_shader = vklib_pipeline_shader_module_create(&vkd, data, size);
+        pipeline_info.fragment = vklib_pipeline_shader_module_create(&vkd, data, size);
     );
 
-    vklib_pipeline pipeline = vklib_pipeline_create(&vkd, vertex_shader, fragment_shader, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
+    pipeline_info.draw_mode = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    pipeline_info.wireframe = false;
+    pipeline_info.vertex_size = sizeof(Vertex);
+    auto vertex_attrib_info = Vertex::GetAttributeInfo();
+    pipeline_info.vertex_attrib_info = vertex_attrib_info.data();
+    pipeline_info.vertex_attrib_info_count = vertex_attrib_info.size();
+
+    const std::vector<Vertex> vertices = {
+        {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    };
+
+    vklib_buffer_create_info vbo_info = {};
+    vbo_info.size = sizeof(Vertex) * vertices.size();
+    vbo_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    vbo_info.mode = VK_SHARING_MODE_EXCLUSIVE;
+    vbo_info.memflags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    vklib_buffer vbo = vklib_buffer_create(&vkd, &vbo_info);
+
+    vklib_buffer_fill_data(&vkd, &vbo, vertices.data(), -1);
+
+    vklib_pipeline pipeline = vklib_pipeline_create(&vkd, &pipeline_info);
     vklib_framebuffers_init(&vkd, pipeline.render_pass);
 
     vklib_renderer renderer = vklib_renderer_create(&vkd, &pipeline, 2);
@@ -153,17 +181,19 @@ int main()
 
         if (vklib_renderer_begin(&vkd, &renderer, clear_color))
         {
-            render_frame(&vkd, &renderer);
+            render_frame(&vkd, &renderer, &vbo);
 
             vklib_renderer_end(&vkd, &renderer);
         }
     }
 
+    vklib_buffer_destroy(&vkd, &vbo);
+
     vklib_renderer_destroy(&vkd, &renderer);
 
     vklib_pipeline_destroy(&vkd, &pipeline);
-    vklib_pipeline_shader_module_destroy(&vkd, vertex_shader);
-    vklib_pipeline_shader_module_destroy(&vkd, fragment_shader);
+    vklib_pipeline_shader_module_destroy(&vkd, pipeline_info.vertex);
+    vklib_pipeline_shader_module_destroy(&vkd, pipeline_info.fragment);
 
     vklib_destroy(&vkd);
 

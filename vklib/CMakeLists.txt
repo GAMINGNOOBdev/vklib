@@ -8,6 +8,7 @@ include_directories(
 set(project_sources
     vklib/set.c
     vklib/vk.c
+    vklib/vkbuffer.c
     vklib/vkcmd.c
     vklib/vkdev.c
     vklib/vkdisplay.c

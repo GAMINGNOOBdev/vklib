@@ -11,6 +11,20 @@ extern "C" {
 #include <stdbool.h>
 #include <vulkan/vulkan_core.h>
 
+typedef VkVertexInputAttributeDescription vklib_pipeline_vertex_attribute_info;
+
+typedef struct
+{
+    VkShaderModule vertex;
+    VkShaderModule fragment;
+    VkPrimitiveTopology draw_mode;
+    bool wireframe;
+
+    vklib_pipeline_vertex_attribute_info* vertex_attrib_info;
+    uint32_t vertex_attrib_info_count;
+    size_t vertex_size;
+} vklib_pipeline_create_info;
+
 typedef struct
 {
     VkShaderModule vertex, fragment;
@@ -26,7 +40,7 @@ VKLIBAPI void vklib_pipeline_shader_module_destroy(vklibd* vkd, VkShaderModule m
 VKLIBAPI VkRenderPass vklib_pipeline_render_pass_create(vklibd* vkd);
 VKLIBAPI void vklib_pipeline_render_pass_destroy(vklibd* vkd, VkRenderPass render_pass);
 
-VKLIBAPI vklib_pipeline vklib_pipeline_create(vklibd* vkd, VkShaderModule vertex, VkShaderModule fragment, VkPrimitiveTopology draw_mode, bool wireframe);
+VKLIBAPI vklib_pipeline vklib_pipeline_create(vklibd* vkd, vklib_pipeline_create_info* create_info);
 VKLIBAPI void vklib_pipeline_destroy(vklibd* vkd, vklib_pipeline* pipeline);
 
 #ifdef __cplusplus
