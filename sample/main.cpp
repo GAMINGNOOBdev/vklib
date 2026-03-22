@@ -1,8 +1,10 @@
 #include "vklib/vk.h"
+#include "vklib/vkindexbuffer.h"
 #include "vklib/vkpipeline.h"
 #include "vklib/vkrenderer.h"
 #include "vklib/vkvertexbuffer.h"
 
+#include <cstdint>
 #include <stdlib.h>
 #include <memory.h>
 #include <stdio.h>
@@ -76,7 +78,7 @@ void* get_file_contents(const char* filename, size_t* sizeptr)
     return result;
 }
 
-void render_frame(vklibd* vkd, vklib_renderer* renderer, vklib_vertex_buffer* vbo)
+void render_frame(vklibd* vkd, vklib_renderer* renderer, vklib_vertex_buffer* vbo, vklib_index_buffer* ibo)
 {
     assume(vkd && renderer);
 
@@ -96,7 +98,7 @@ void render_frame(vklibd* vkd, vklib_renderer* renderer, vklib_vertex_buffer* vb
     };
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-    vklib_vertex_buffer_render(vbo, cmd);
+    vklib_index_buffer_render(ibo, vbo, cmd);
 }
 
 void resize_callback(GLFWwindow* window, int width, int height)
@@ -149,9 +151,13 @@ int main()
     pipeline_info.vertex_attrib_info_count = vertex_attrib_info.size();
 
     const std::vector<Vertex> vertices = {
-        {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+    };
+    const std::vector<uint16_t> indices = {
+        0, 1, 2, 2, 3, 0
     };
 
     vklib_pipeline pipeline = vklib_pipeline_create(&vkd, &pipeline_info);
@@ -160,6 +166,7 @@ int main()
     vklib_renderer renderer = vklib_renderer_create(&vkd, &pipeline, 2);
 
     vklib_vertex_buffer vbo = vklib_vertex_buffer_create(&vkd, &renderer.cmd, vertices.data(), sizeof(Vertex), vertices.size());
+    vklib_index_buffer ibo = vklib_index_buffer_create(&vkd, &renderer.cmd, indices.data(), VK_INDEX_TYPE_UINT16, sizeof(uint16_t), indices.size());
 
     VkClearValue clear_color = {};
     clear_color.color.float32[0] = 0;
@@ -172,7 +179,7 @@ int main()
 
         if (vklib_renderer_begin(&vkd, &renderer, clear_color))
         {
-            render_frame(&vkd, &renderer, &vbo);
+            render_frame(&vkd, &renderer, &vbo, &ibo);
 
             vklib_renderer_end(&vkd, &renderer);
         }
@@ -181,6 +188,7 @@ int main()
     vklib_renderer_destroy(&vkd, &renderer);
 
     vklib_vertex_buffer_destroy(&vkd, &vbo);
+    vklib_index_buffer_destroy(&vkd, &ibo);
 
     vklib_pipeline_destroy(&vkd, &pipeline);
     vklib_pipeline_shader_module_destroy(&vkd, pipeline_info.vertex);
