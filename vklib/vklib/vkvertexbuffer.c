@@ -14,19 +14,18 @@ vklib_vertex_buffer vklib_vertex_buffer_create(vklibd* vkd, vklib_cmd* cmd, cons
     vbo.size = vertex_count * vertex_size;
     vbo.count = vertex_count;
 
-    vklib_buffer_create_info staging_buffer_info = {};
-    staging_buffer_info.size = vbo.size;
-    staging_buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    staging_buffer_info.memflags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-    vklib_buffer staging_buffer = vklib_buffer_create(vkd, &staging_buffer_info);
+    vklib_buffer staging_buffer = vklib_buffer_create(vkd, (vklib_buffer_create_info){
+        .size = vbo.size,
+        .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        .memflags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+    });
     vklib_buffer_fill_data(vkd, &staging_buffer, data, vbo.size);
 
-    vklib_buffer_create_info vertex_buffer_create_info = {};
-    vertex_buffer_create_info.size = vbo.size;
-    vertex_buffer_create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    vertex_buffer_create_info.memflags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    vbo.buffer = vklib_buffer_create(vkd, &vertex_buffer_create_info);
+    vbo.buffer = vklib_buffer_create(vkd, (vklib_buffer_create_info){
+        .size = vbo.size,
+        .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        .memflags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    });
 
     vklib_buffer_copy(vkd, cmd, &vbo.buffer, &staging_buffer, vbo.size);
 

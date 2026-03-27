@@ -20,15 +20,15 @@ uint32_t vklib_buffer_find_mem_type(vklibd* vkd, uint32_t filter, VkMemoryProper
     assume(false, -1);
 }
 
-vklib_buffer vklib_buffer_create(vklibd* vkd, vklib_buffer_create_info* info)
+vklib_buffer vklib_buffer_create(vklibd* vkd, vklib_buffer_create_info info)
 {
     vklib_buffer buffer = {};
     assume(vkd && vkd->instance, buffer);
 
     VkBufferCreateInfo buffer_info = {};
     buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buffer_info.size = info->size;
-    buffer_info.usage = info->usage;
+    buffer_info.size = info.size;
+    buffer_info.usage = info.usage;
     buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     assume(vkCreateBuffer(vkd->device, &buffer_info, NULL, &buffer.buffer) == VK_SUCCESS, (vklib_buffer){});
@@ -39,12 +39,12 @@ vklib_buffer vklib_buffer_create(vklibd* vkd, vklib_buffer_create_info* info)
     VkMemoryAllocateInfo alloc_info = {};
     alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     alloc_info.allocationSize = requirements.size;
-    alloc_info.memoryTypeIndex = vklib_buffer_find_mem_type(vkd, requirements.memoryTypeBits, info->memflags);
+    alloc_info.memoryTypeIndex = vklib_buffer_find_mem_type(vkd, requirements.memoryTypeBits, info.memflags);
 
     assume(vkAllocateMemory(vkd->device, &alloc_info, NULL, &buffer.memory) == VK_SUCCESS, (vklib_buffer){});
 
     vkBindBufferMemory(vkd->device, buffer.buffer, buffer.memory, 0);
-    buffer.size = info->size;
+    buffer.size = info.size;
 
     return buffer;
 }

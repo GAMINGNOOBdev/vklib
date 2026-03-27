@@ -91,11 +91,22 @@ void vklib_pipeline_render_pass_destroy(vklibd* vkd, VkRenderPass render_pass)
     vkDestroyRenderPass(vkd->device, render_pass, NULL);
 }
 
-vklib_pipeline vklib_pipeline_create(vklibd* vkd, vklib_pipeline_create_info* info)
+vklib_pipeline vklib_pipeline_create(vklibd* vkd, vklib_pipeline_create_info info)
 {
     vklib_pipeline pipeline = {};
     assume(vkd, pipeline);
-    assume(info->vertex && info->fragment, pipeline);
+    assume(info.vertex && info.fragment, pipeline);
+    bool descriptor_set_present = info.uniform_bindings && info.uniform_binding_count != 0;
+
+    if (descriptor_set_present)
+    {
+        VkDescriptorSetLayoutCreateInfo descriptor_layout_set_info = {};
+        descriptor_layout_set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        descriptor_layout_set_info.bindingCount = info.uniform_binding_count;
+        descriptor_layout_set_info.pBindings = info.uniform_bindings;
+
+        assume(vkCreateDescriptorSetLayout(vkd->device, &descriptor_layout_set_info, NULL, &pipeline.descriptor_set_layout) == VK_SUCCESS, (vklib_pipeline){});
+    }
 
     pipeline.render_pass = vklib_pipeline_render_pass_create(vkd);
 
@@ -103,19 +114,19 @@ vklib_pipeline vklib_pipeline_create(vklibd* vkd, vklib_pipeline_create_info* in
         (VkPipelineShaderStageCreateInfo){
             .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
             .stage = VK_SHADER_STAGE_VERTEX_BIT,
-            .module = info->vertex,
+            .module = info.vertex,
             .pName = "main"
         },
         (VkPipelineShaderStageCreateInfo){
             .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
             .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .module = info->fragment,
+            .module = info.fragment,
             .pName = "main"
         },
     };
 
-    pipeline.vertex = info->vertex;
-    pipeline.fragment = info->fragment;
+    pipeline.vertex = info.vertex;
+    pipeline.fragment = info.fragment;
 
     VkDynamicState dynamic_states[] = {
         VK_DYNAMIC_STATE_VIEWPORT,
@@ -129,20 +140,20 @@ vklib_pipeline vklib_pipeline_create(vklibd* vkd, vklib_pipeline_create_info* in
 
     VkVertexInputBindingDescription binding_description = {};
     binding_description.binding = 0;
-    binding_description.stride = info->vertex_size;
+    binding_description.stride = info.vertex_size;
     binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
     vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input_info.vertexBindingDescriptionCount = info->vertex_size != 0 ? 1 : 0;
-    vertex_input_info.pVertexBindingDescriptions = info->vertex_size != 0 ? &binding_description : NULL;
-    vertex_input_info.vertexAttributeDescriptionCount = info->vertex_attrib_info_count;
-    vertex_input_info.pVertexAttributeDescriptions = info->vertex_attrib_info;
+    vertex_input_info.vertexBindingDescriptionCount = info.vertex_size != 0 ? 1 : 0;
+    vertex_input_info.pVertexBindingDescriptions = info.vertex_size != 0 ? &binding_description : NULL;
+    vertex_input_info.vertexAttributeDescriptionCount = info.vertex_attrib_info_count;
+    vertex_input_info.pVertexAttributeDescriptions = info.vertex_attrib_info;
 
     VkPipelineInputAssemblyStateCreateInfo input_assembly_info = {};
     input_assembly_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     input_assembly_info.primitiveRestartEnable = VK_FALSE;
-    input_assembly_info.topology = pipeline.draw_mode = info->draw_mode;
+    input_assembly_info.topology = pipeline.draw_mode = info.draw_mode;
 
     VkPipelineViewportStateCreateInfo viewport_info = {};
     viewport_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -153,10 +164,10 @@ vklib_pipeline vklib_pipeline_create(vklibd* vkd, vklib_pipeline_create_info* in
     rasterizer_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizer_info.depthClampEnable = VK_FALSE;
     rasterizer_info.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer_info.polygonMode = info->wireframe ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
+    rasterizer_info.polygonMode = info.wireframe ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
     rasterizer_info.lineWidth = 1.0f;
     rasterizer_info.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer_info.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer_info.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer_info.depthBiasEnable = VK_FALSE;
     rasterizer_info.depthBiasConstantFactor = 0;
     rasterizer_info.depthBiasClamp = 0;
@@ -194,7 +205,8 @@ vklib_pipeline vklib_pipeline_create(vklibd* vkd, vklib_pipeline_create_info* in
 
     VkPipelineLayoutCreateInfo pipeline_layout_info = {};
     pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipeline_layout_info.setLayoutCount = 0;
+    pipeline_layout_info.setLayoutCount = descriptor_set_present ? 1 : 0;
+    pipeline_layout_info.pSetLayouts = descriptor_set_present ? &pipeline.descriptor_set_layout : NULL;
 
     if (vkCreatePipelineLayout(vkd->device, &pipeline_layout_info, NULL, &pipeline.layout) != VK_SUCCESS)
     {
@@ -237,6 +249,9 @@ void vklib_pipeline_destroy(vklibd* vkd, vklib_pipeline* pipeline)
 {
     assume(vkd);
     assume(pipeline);
+
+    if (pipeline->descriptor_set_layout != VK_NULL_HANDLE)
+        vkDestroyDescriptorSetLayout(vkd->device, pipeline->descriptor_set_layout, NULL);
 
     vkDestroyPipeline(vkd->device, pipeline->handle, NULL);
     vkDestroyPipelineLayout(vkd->device, pipeline->layout, NULL);

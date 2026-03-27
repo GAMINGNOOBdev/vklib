@@ -1,18 +1,20 @@
 #include "vklib/vk.h"
-#include "vklib/vkindexbuffer.h"
+#include "vklib/vkuniform.h"
 #include "vklib/vkpipeline.h"
 #include "vklib/vkrenderer.h"
+#include "vklib/vkindexbuffer.h"
 #include "vklib/vkvertexbuffer.h"
 
-#include <cstdint>
 #include <stdlib.h>
 #include <memory.h>
 #include <stdio.h>
 #include <time.h>
+#include <chrono>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
 #include <imgui.h>
+#include "camera.hpp"
 #include "vertex.hpp"
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
@@ -103,8 +105,13 @@ void render_frame(vklibd* vkd, vklib_renderer* renderer, vklib_vertex_buffer* vb
 
 void resize_callback(GLFWwindow* window, int width, int height)
 {
-    vklibd* vkd = reinterpret_cast<vklibd*>(glfwGetWindowUserPointer(window));
-    vkd->window_resized = true;
+    struct smth{
+        vklibd* vkd;
+        Camera* cam;
+    } resize_data = *reinterpret_cast<smth*>(glfwGetWindowUserPointer(window));
+    resize_data.vkd->window_resized = true;
+    if (resize_data.cam)
+        resize_data.cam->Resize(width, height);
 }
 
 ImGuiIO* mImGuiIO = NULL;
@@ -127,7 +134,13 @@ int main()
     };
 
     vklibd vkd = vklib_init(init_data);
-    glfwSetWindowUserPointer(window, &vkd);
+    struct {
+        vklibd* vkd;
+        Camera* cam;
+    } resize_data = {
+        &vkd,NULL
+    };
+    glfwSetWindowUserPointer(window, &resize_data);
     glfwSetFramebufferSizeCallback(window, resize_callback);
 
     vklib_pipeline_create_info pipeline_info = {};
@@ -135,7 +148,7 @@ int main()
     size_t size = 0;
     void* data = NULL;
     using(data,
-        data = get_file_contents("assets/buffered.vert.spv", &size);
+        data = get_file_contents("assets/uniformed.vert.spv", &size);
         pipeline_info.vertex = vklib_pipeline_shader_module_create(&vkd, data, size);
     );
     using(data,
@@ -160,7 +173,14 @@ int main()
         0, 1, 2, 2, 3, 0
     };
 
-    vklib_pipeline pipeline = vklib_pipeline_create(&vkd, &pipeline_info);
+    Camera camera = Camera(WIDTH, HEIGHT);
+    resize_data.cam = &camera;
+
+    auto camera_binding_info = camera.data.GetBindingInfo();
+    pipeline_info.uniform_binding_count = camera_binding_info.size();
+    pipeline_info.uniform_bindings = camera_binding_info.data();
+
+    vklib_pipeline pipeline = vklib_pipeline_create(&vkd, pipeline_info);
     vklib_framebuffers_init(&vkd, pipeline.render_pass);
 
     vklib_renderer renderer = vklib_renderer_create(&vkd, &pipeline, 2);
@@ -168,17 +188,32 @@ int main()
     vklib_vertex_buffer vbo = vklib_vertex_buffer_create(&vkd, &renderer.cmd, vertices.data(), sizeof(Vertex), vertices.size());
     vklib_index_buffer ibo = vklib_index_buffer_create(&vkd, &renderer.cmd, indices.data(), VK_INDEX_TYPE_UINT16, sizeof(uint16_t), indices.size());
 
+    vklib_uniform_create_info uniform_buffer_create_info = {};
+    uniform_buffer_create_info.data_size = sizeof(camera.data);
+    uniform_buffer_create_info.pipeline = &pipeline;
+    uniform_buffer_create_info.renderer = &renderer;
+    vklib_uniform ubo = vklib_uniform_create(&vkd, uniform_buffer_create_info);
+
+
     VkClearValue clear_color = {};
     clear_color.color.float32[0] = 0;
     clear_color.color.float32[1] = 0;
     clear_color.color.float32[2] = 0;
     clear_color.color.float32[3] = 1;
+    static auto startTime = std::chrono::high_resolution_clock::now();
     while (!glfwWindowShouldClose(window))
     {
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+        camera.Update(time);
+
         glfwPollEvents();
 
+        vklib_uniform_update(&ubo, renderer.frame, &camera.data, sizeof(camera.data));
+        
         if (vklib_renderer_begin(&vkd, &renderer, clear_color))
         {
+            vklib_uniform_bind(&ubo, &renderer);
             render_frame(&vkd, &renderer, &vbo, &ibo);
 
             vklib_renderer_end(&vkd, &renderer);
@@ -189,6 +224,8 @@ int main()
 
     vklib_vertex_buffer_destroy(&vkd, &vbo);
     vklib_index_buffer_destroy(&vkd, &ibo);
+
+    vklib_uniform_destroy(&vkd, &ubo);
 
     vklib_pipeline_destroy(&vkd, &pipeline);
     vklib_pipeline_shader_module_destroy(&vkd, pipeline_info.vertex);

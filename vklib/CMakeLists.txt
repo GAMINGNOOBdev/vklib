@@ -16,6 +16,7 @@ set(project_sources
     vklib/vkindexbuffer.c
     vklib/vkpipeline.c
     vklib/vkrenderer.c
+    vklib/vkuniform.c
     vklib/vkutil.c
     vklib/vkvertexbuffer.c
 )

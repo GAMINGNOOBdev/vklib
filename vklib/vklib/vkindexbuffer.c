@@ -16,19 +16,18 @@ vklib_index_buffer vklib_index_buffer_create(vklibd* vkd, vklib_cmd* cmd, const 
     ibo.count = index_count;
     ibo.type = index_type;
 
-    vklib_buffer_create_info staging_buffer_info = {};
-    staging_buffer_info.size = ibo.size;
-    staging_buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    staging_buffer_info.memflags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-    vklib_buffer staging_buffer = vklib_buffer_create(vkd, &staging_buffer_info);
+    vklib_buffer staging_buffer = vklib_buffer_create(vkd, (vklib_buffer_create_info){
+        .size = ibo.size,
+        .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        .memflags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+    });
     vklib_buffer_fill_data(vkd, &staging_buffer, data, ibo.size);
 
-    vklib_buffer_create_info index_buffer_create_info = {};
-    index_buffer_create_info.size = ibo.size;
-    index_buffer_create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    index_buffer_create_info.memflags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    ibo.buffer = vklib_buffer_create(vkd, &index_buffer_create_info);
+    ibo.buffer = vklib_buffer_create(vkd, (vklib_buffer_create_info){
+        .size = ibo.size,
+        .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        .memflags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    });
 
     vklib_buffer_copy(vkd, cmd, &ibo.buffer, &staging_buffer, ibo.size);
 
