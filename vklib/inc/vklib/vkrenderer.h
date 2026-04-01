@@ -7,6 +7,8 @@ extern "C" {
 
 #include "vk.h"
 #include "vklib/vkcmd.h"
+#include "vklib/vkpipeline.h"
+#include "vklib/vkrendertarget.h"
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -27,8 +29,8 @@ typedef struct
 
 VKLIBAPI vklib_renderer vklib_renderer_create(vklibd* vkd, vklib_pipeline* pipeline, uint32_t max_frame_in_flight);
 VKLIBAPI VkCommandBuffer vklib_renderer_get_current_cmd_buffer(vklib_renderer* renderer);
-VKLIBAPI bool vklib_renderer_begin(vklibd* vkd, vklib_renderer* renderer, VkClearValue clear_color);
-VKLIBAPI bool vklib_renderer_end(vklibd* vkd, vklib_renderer* renderer);
+VKLIBAPI bool vklib_renderer_begin(vklibd* vkd, vklib_renderer* renderer, vklib_render_target* render_target, VkClearValue clear_color);
+VKLIBAPI bool vklib_renderer_end(vklibd* vkd, vklib_renderer* renderer, vklib_render_target* render_target);
 VKLIBAPI void vklib_renderer_destroy(vklibd* vkd, vklib_renderer* renderer);
 
 #ifdef __cplusplus

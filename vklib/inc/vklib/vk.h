@@ -56,7 +56,6 @@ typedef struct
     
     VkImageView* swapchain_image_views;
     uint32_t swapchain_image_count;
-    VkFramebuffer* framebuffers;
     VkImage* swapchain_images;
 
     VkExtent2D swapchain_extent;
@@ -80,8 +79,6 @@ extern vklib_log_msg_t vklib_log_msg;
 
 VKLIBAPI vklibd vklib_init(vklibd_init_data init_data);
 VKLIBAPI void vklib_handle_view_changes(vklibd* vkd);
-VKLIBAPI void vklib_framebuffers_init(vklibd* vkd, VkRenderPass render_pass);
-VKLIBAPI void vklib_framebuffers_destroy(vklibd* vkd);
 VKLIBAPI void vklib_destroy(vklibd* vkd);
 
 const char* vklib_strfmt(const char* fmt, ...);

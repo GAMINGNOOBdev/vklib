@@ -33,64 +33,6 @@ void vklib_pipeline_shader_module_destroy(vklibd* vkd, VkShaderModule module)
     vkDestroyShaderModule(vkd->device, module, NULL);
 }
 
-VkRenderPass vklib_pipeline_render_pass_create(vklibd* vkd)
-{
-    assume(vkd, VK_NULL_HANDLE);
-    assume(vkd->instance, VK_NULL_HANDLE);
-
-    VkAttachmentDescription color_attachment = {};
-    color_attachment.format = vkd->swapchain_format;
-    color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-    VkAttachmentReference color_attachment_reference = {};
-    color_attachment_reference.attachment = 0;
-    color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkSubpassDescription subpass = {};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &color_attachment_reference;
-
-    VkRenderPassCreateInfo render_pass_info = {};
-    render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    render_pass_info.attachmentCount = 1;
-    render_pass_info.pAttachments = &color_attachment;
-    render_pass_info.subpassCount = 1;
-    render_pass_info.pSubpasses = &subpass;
-
-    VkSubpassDependency dependency = {};
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    render_pass_info.dependencyCount = 1;
-    render_pass_info.pDependencies = &dependency;
-
-    VkRenderPass render_pass = VK_NULL_HANDLE;
-    if (vkCreateRenderPass(vkd->device, &render_pass_info, NULL, &render_pass) != VK_SUCCESS)
-    {
-        LOGERROR("failed to create render pass");
-        return VK_NULL_HANDLE;
-    }
-    return render_pass;
-}
-
-void vklib_pipeline_render_pass_destroy(vklibd* vkd, VkRenderPass render_pass)
-{
-    assume(vkd && vkd->instance && render_pass);
-
-    vkDestroyRenderPass(vkd->device, render_pass, NULL);
-}
-
 vklib_pipeline vklib_pipeline_create(vklibd* vkd, vklib_pipeline_create_info info)
 {
     vklib_pipeline pipeline = {};
@@ -108,7 +50,7 @@ vklib_pipeline vklib_pipeline_create(vklibd* vkd, vklib_pipeline_create_info inf
         assume(vkCreateDescriptorSetLayout(vkd->device, &descriptor_layout_set_info, NULL, &pipeline.descriptor_set_layout) == VK_SUCCESS, (vklib_pipeline){});
     }
 
-    pipeline.render_pass = vklib_pipeline_render_pass_create(vkd);
+    pipeline.render_pass = info.render_pass;
 
     VkPipelineShaderStageCreateInfo shader_stage_info[] = {
         (VkPipelineShaderStageCreateInfo){
@@ -255,5 +197,4 @@ void vklib_pipeline_destroy(vklibd* vkd, vklib_pipeline* pipeline)
 
     vkDestroyPipeline(vkd->device, pipeline->handle, NULL);
     vkDestroyPipelineLayout(vkd->device, pipeline->layout, NULL);
-    vklib_pipeline_render_pass_destroy(vkd, pipeline->render_pass);
 }

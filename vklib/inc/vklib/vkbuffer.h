@@ -26,9 +26,12 @@ typedef struct
     VkDeviceMemory memory;
 } vklib_buffer;
 
+VKLIBAPI uint32_t vklib_buffer_find_mem_type(vklibd* vkd, uint32_t filter, VkMemoryPropertyFlags properties);
+
 VKLIBAPI vklib_buffer vklib_buffer_create(vklibd* vkd, vklib_buffer_create_info info);
 VKLIBAPI void vklib_buffer_fill_data(vklibd* vkd, vklib_buffer* buffer, const void* data, VkDeviceSize size);
 VKLIBAPI void vklib_buffer_copy(vklibd* vkd, vklib_cmd* cmd, vklib_buffer* dst, vklib_buffer* src, VkDeviceSize size);
+VKLIBAPI void vklib_buffer_copy_to_image(vklibd* vkd, vklib_cmd* cmd, vklib_buffer* src, VkImage img, VkExtent3D imgsize, VkImageAspectFlags aspect);
 VKLIBAPI void vklib_buffer_destroy(vklibd* vkd, vklib_buffer* buffer);
 
 #ifdef __cplusplus

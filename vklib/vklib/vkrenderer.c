@@ -48,9 +48,9 @@ VkCommandBuffer vklib_renderer_get_current_cmd_buffer(vklib_renderer* renderer)
 #define image_available renderer->images_available[renderer->frame]
 #define frame_in_flight renderer->frames_in_flight[renderer->frame]
 
-bool vklib_renderer_begin(vklibd* vkd, vklib_renderer* renderer, VkClearValue clear_color)
+bool vklib_renderer_begin(vklibd* vkd, vklib_renderer* renderer, vklib_render_target* render_target, VkClearValue clear_color)
 {
-    assume(vkd && renderer, false);
+    assume(vkd && renderer && render_target, false);
 
     VkCommandBuffer buffer = vklib_renderer_get_current_cmd_buffer(renderer);
 
@@ -59,6 +59,7 @@ bool vklib_renderer_begin(vklibd* vkd, vklib_renderer* renderer, VkClearValue cl
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         vklib_handle_view_changes(vkd);
+        vklib_render_target_recreate(vkd, render_target);
         return false;
     }
     else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
@@ -70,16 +71,16 @@ bool vklib_renderer_begin(vklibd* vkd, vklib_renderer* renderer, VkClearValue cl
     vkResetFences(vkd->device, 1, &frame_in_flight);
     vkResetCommandBuffer(buffer, 0);
 
-    vklib_cmd_begin(&renderer->cmd, renderer->pipeline, renderer->frame);
+    vklib_cmd_begin(&renderer->cmd, renderer->frame);
 
     // DRAW CODE
     {
         VkRenderPassBeginInfo render_pass_info = {};
         render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        render_pass_info.renderPass = renderer->pipeline->render_pass;
-        render_pass_info.framebuffer = vkd->framebuffers[renderer->image];
+        render_pass_info.renderPass = render_target->render_pass;
+        render_pass_info.framebuffer = render_target->framebuffers[renderer->image];
         render_pass_info.renderArea.offset = (VkOffset2D){0,0};
-        render_pass_info.renderArea.extent = vkd->swapchain_extent;
+        render_pass_info.renderArea.extent = render_target->extent;
 
         render_pass_info.clearValueCount = 1;
         render_pass_info.pClearValues = &clear_color;
@@ -93,7 +94,7 @@ bool vklib_renderer_begin(vklibd* vkd, vklib_renderer* renderer, VkClearValue cl
 
 #define render_finished renderer->renders_finished[renderer->image]
 
-bool vklib_renderer_end(vklibd* vkd, vklib_renderer* renderer)
+bool vklib_renderer_end(vklibd* vkd, vklib_renderer* renderer, vklib_render_target* render_target)
 {
     assume(vkd && renderer, false);
 
@@ -136,6 +137,7 @@ bool vklib_renderer_end(vklibd* vkd, vklib_renderer* renderer)
     {
         vkd->window_resized = false;
         vklib_handle_view_changes(vkd);
+        vklib_render_target_recreate(vkd, render_target);
     }
     else if (result != VK_SUCCESS)
     {

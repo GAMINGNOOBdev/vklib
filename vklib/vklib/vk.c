@@ -2,7 +2,6 @@
 #include "vklib/vkdev.h"
 #include "vklib/vkutil.h"
 #include "vklib/vkdisplay.h"
-#include "vklib/vkframebuffer.h"
 
 #include <vulkan/vulkan_core.h>
 
@@ -129,36 +128,13 @@ VKLIBAPI void vklib_handle_view_changes(vklibd* vkd)
 
     vkDeviceWaitIdle(vkd->device);
 
-    vklib_framebuffers_destroy(vkd);
     vklib_display_destroy_swapchain(vkd);
-
     vklib_display_create_swapchain(vkd);
-    vklib_framebuffers_init(vkd, vkd->last_render_pass);
-}
-
-void vklib_framebuffers_init(vklibd* vkd, VkRenderPass render_pass)
-{
-    assume(vkd && vkd->instance);
-
-    vkd->last_render_pass = render_pass;
-
-    vkd->framebuffers = malloc(sizeof(VkFramebuffer) * vkd->swapchain_image_count);
-    vklib_framebuffer_create(vkd, render_pass, vkd->swapchain_image_count, vkd->framebuffers, vkd->swapchain_image_views);
-}
-
-void vklib_framebuffers_destroy(vklibd* vkd)
-{
-    assume(vkd);
-
-    vklib_framebuffer_destroy(vkd, vkd->swapchain_image_count, vkd->framebuffers);
-    free(vkd->framebuffers);
 }
 
 void vklib_destroy(vklibd* vkd)
 {
     assume(vkd && vkd->instance);
-
-    vklib_framebuffers_destroy(vkd);
 
     vklib_display_destroy_swapchain(vkd);
 

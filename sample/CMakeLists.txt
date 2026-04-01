@@ -4,6 +4,7 @@ project(sample)
 include_directories(
     ../vklib/inc
     ../imgui
+    ../stb
     ../glm
 )
 

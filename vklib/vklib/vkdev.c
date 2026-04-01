@@ -49,6 +49,9 @@ bool vklib_dev_check_extensions(VkPhysicalDevice dev)
 
 bool vklib_dev_is_suitable(VkSurfaceKHR surface, VkPhysicalDevice dev)
 {
+    VkPhysicalDeviceFeatures features;
+    vkGetPhysicalDeviceFeatures(dev, &features); 
+
     vklib_dev_queue_family family = vklib_dev_find_queue_families(surface, dev);
     bool extensions_supported = vklib_dev_check_extensions(dev);
     bool swapchain_compatible = false;
@@ -57,7 +60,7 @@ bool vklib_dev_is_suitable(VkSurfaceKHR surface, VkPhysicalDevice dev)
         vklib_display_swapchain_info info = vklib_display_query_swapchain_info(surface, dev, false);
         swapchain_compatible = info.format_count != 0 && info.present_mode_count != 0;
     }
-    return family.graphics_present && family.presentation_present && extensions_supported && swapchain_compatible;
+    return family.graphics_present && family.presentation_present && extensions_supported && swapchain_compatible && features.samplerAnisotropy;
 }
 
 bool vklib_dev_pick(vklibd* vkd)
@@ -106,6 +109,7 @@ bool vklib_dev_pick(vklibd* vkd)
     }
 
     VkPhysicalDeviceFeatures device_features = {};
+    device_features.samplerAnisotropy = VK_TRUE;
 
     VkDeviceCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

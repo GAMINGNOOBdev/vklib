@@ -20,6 +20,8 @@ typedef struct
     VkPrimitiveTopology draw_mode;
     bool wireframe;
 
+    VkRenderPass render_pass;
+
     vklib_pipeline_vertex_attribute_info* vertex_attrib_info;
     uint32_t vertex_attrib_info_count;
     size_t vertex_size;
@@ -40,9 +42,6 @@ typedef struct
 
 VKLIBAPI VkShaderModule vklib_pipeline_shader_module_create(vklibd* vkd, void* data, size_t size);
 VKLIBAPI void vklib_pipeline_shader_module_destroy(vklibd* vkd, VkShaderModule module);
-
-VKLIBAPI VkRenderPass vklib_pipeline_render_pass_create(vklibd* vkd);
-VKLIBAPI void vklib_pipeline_render_pass_destroy(vklibd* vkd, VkRenderPass render_pass);
 
 VKLIBAPI vklib_pipeline vklib_pipeline_create(vklibd* vkd, vklib_pipeline_create_info create_info);
 VKLIBAPI void vklib_pipeline_destroy(vklibd* vkd, vklib_pipeline* pipeline);

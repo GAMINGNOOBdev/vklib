@@ -6,6 +6,45 @@
 #include <memory.h>
 #include <vulkan/vulkan_core.h>
 
+VkCommandBuffer vklib_cmd_begin_single_use(vklibd* vkd, vklib_cmd* cmd)
+{
+    assume(vkd && cmd, VK_NULL_HANDLE);
+
+    VkCommandBufferAllocateInfo alloc_info = {};
+    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    alloc_info.commandPool = cmd->pool;
+    alloc_info.commandBufferCount = 1;
+
+    VkCommandBuffer buffer;
+    vkAllocateCommandBuffers(vkd->device, &alloc_info, &buffer);
+
+    VkCommandBufferBeginInfo begin_info = {};
+    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(buffer, &begin_info);
+
+    return buffer;
+}
+
+void vklib_cmd_end_single_use(vklibd* vkd, vklib_cmd* cmd, VkCommandBuffer buffer)
+{
+    assume(vkd && buffer != VK_NULL_HANDLE);
+
+    vkEndCommandBuffer(buffer);
+
+    VkSubmitInfo submit_info = {};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &buffer;
+
+    vkQueueSubmit(vkd->graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
+    vkQueueWaitIdle(vkd->graphics_queue);
+
+    vkFreeCommandBuffers(vkd->device, cmd->pool, 1, &buffer);
+}
+
 vklib_cmd vklib_cmd_create(vklibd* vkd, uint32_t buffer_count)
 {
     vklib_cmd cmd = {};
@@ -44,9 +83,9 @@ vklib_cmd vklib_cmd_create(vklibd* vkd, uint32_t buffer_count)
     return cmd;
 }
 
-bool vklib_cmd_begin(vklib_cmd* cmd, vklib_pipeline* pipeline, uint32_t idx)
+bool vklib_cmd_begin(vklib_cmd* cmd, uint32_t idx)
 {
-    assume(cmd && pipeline, false);
+    assume(cmd, false);
 
     VkCommandBufferBeginInfo begin_info = {};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

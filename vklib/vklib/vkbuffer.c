@@ -71,36 +71,35 @@ void vklib_buffer_copy(vklibd* vkd, vklib_cmd* cmd, vklib_buffer* dst, vklib_buf
     if (size == (VkDeviceSize)-1 || size > max_size || size == 0)
         size = max_size;
 
-    VkCommandBufferAllocateInfo alloc_info = {};
-    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    alloc_info.commandPool = cmd->pool;
-    alloc_info.commandBufferCount = 1;
-
-    VkCommandBuffer cmdbuf;
-    vkAllocateCommandBuffers(vkd->device, &alloc_info, &cmdbuf);
-
-    VkCommandBufferBeginInfo begin_info = {};
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-    vkBeginCommandBuffer(cmdbuf, &begin_info);
+    VkCommandBuffer cmdbuf = vklib_cmd_begin_single_use(vkd, cmd);
 
     VkBufferCopy copy_info = {};
     copy_info.size = size;
     vkCmdCopyBuffer(cmdbuf, src->buffer, dst->buffer, 1, &copy_info);
 
-    vkEndCommandBuffer(cmdbuf);
+    vklib_cmd_end_single_use(vkd, cmd, cmdbuf);
+}
 
-    VkSubmitInfo submit_info = {};
-    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submit_info.commandBufferCount = 1;
-    submit_info.pCommandBuffers = &cmdbuf;
+void vklib_buffer_copy_to_image(vklibd* vkd, vklib_cmd* cmd, vklib_buffer* src, VkImage dst, VkExtent3D size, VkImageAspectFlags aspect)
+{
+    assume(vkd && cmd && src && dst != VK_NULL_HANDLE);
 
-    vkQueueSubmit(vkd->graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
-    vkQueueWaitIdle(vkd->graphics_queue);
+    VkCommandBuffer cmdbuf = vklib_cmd_begin_single_use(vkd, cmd);
 
-    vkFreeCommandBuffers(vkd->device, cmd->pool, 1, &cmdbuf);
+    VkBufferImageCopy region = {};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource.aspectMask = aspect;
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+    region.imageOffset = (VkOffset3D){0,0,0};
+    region.imageExtent = size;
+
+    vkCmdCopyBufferToImage(cmdbuf, src->buffer, dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+    vklib_cmd_end_single_use(vkd, cmd, cmdbuf);
 }
 
 void vklib_buffer_destroy(vklibd* vkd, vklib_buffer* buffer)

@@ -2,11 +2,9 @@
 #define __CAMERA_H_
 
 #define GLM_FORCE_RADIANS
-#include <array>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <vklib/vkpipeline.h>
 #include <vulkan/vulkan_core.h>
+#include <glm/gtc/matrix_transform.hpp>
 
 struct CameraUniform
 {
@@ -14,15 +12,13 @@ struct CameraUniform
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
 
-    static inline std::array<VkDescriptorSetLayoutBinding, 1> GetBindingInfo()
+    static inline VkDescriptorSetLayoutBinding GetBindingInfo()
     {
-        std::array<VkDescriptorSetLayoutBinding, 1> bindingInfo;
-
-        bindingInfo[0] = {};
-        bindingInfo[0].binding = 0;
-        bindingInfo[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        bindingInfo[0].descriptorCount = 1;
-        bindingInfo[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        VkDescriptorSetLayoutBinding bindingInfo = {};
+        bindingInfo.binding = 0;
+        bindingInfo.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        bindingInfo.descriptorCount = 1;
+        bindingInfo.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
         return bindingInfo;
     }

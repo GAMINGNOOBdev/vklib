@@ -9,10 +9,11 @@ struct Vertex
 {
     glm::vec2 pos;
     glm::vec3 color;
+    glm::vec2 uv;
 
-    static inline std::array<vklib_pipeline_vertex_attribute_info, 2> GetAttributeInfo()
+    static inline std::array<vklib_pipeline_vertex_attribute_info, 3> GetAttributeInfo()
     {
-        std::array<vklib_pipeline_vertex_attribute_info, 2> attributeInfo;
+        std::array<vklib_pipeline_vertex_attribute_info, 3> attributeInfo;
 
         attributeInfo[0].binding = 0;
         attributeInfo[0].location = 0;
@@ -23,6 +24,12 @@ struct Vertex
         attributeInfo[1].location = 1;
         attributeInfo[1].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeInfo[1].offset = offsetof(struct Vertex, color);
+
+        attributeInfo[2].binding = 0;
+        attributeInfo[2].location = 2;
+        attributeInfo[2].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeInfo[2].offset = offsetof(struct Vertex, uv);
+
         return attributeInfo;
     }
 };
